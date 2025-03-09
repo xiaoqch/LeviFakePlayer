@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "main": "./lib/lfp-api.js",
+  "typings": "./lib/lfp-api.d.ts",
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "test": "tsc",
+    "publish": "tsc -p tsconfig.api.json"
+  }
+}

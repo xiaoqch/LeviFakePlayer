@@ -13,6 +13,7 @@ Before submitting this PR, please make sure:
 
 - [ ] Your code builds clean without any errors or warnings
 - [ ] Your code follows [LeviLamina C++ Style Guide](https://github.com/LiteLDev/LeviLamina/wiki/CPP-Style-Guide)
+- [ ] Your code can pass the testing
 - [ ] You have tested all functions
 - [ ] You have not used code without license
 - [ ] You have added statement for third-party code

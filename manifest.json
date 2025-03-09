@@ -2,5 +2,11 @@
     "name": "${modName}",
     "entry": "${modFile}",
     "version": "${modVersion}",
-    "type": "native"
+    "type": "native",
+    "description": "A FakePlayer mod for LeviLamina",
+    "dependencies": [
+        {
+            "name": "LegacyRemoteCall"
+        }
+    ]
 }

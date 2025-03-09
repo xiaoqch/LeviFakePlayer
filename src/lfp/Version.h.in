@@ -1,0 +1,34 @@
+#pragma once
+
+// clang-format off
+#define LFP_LABEL_ALPHA 0
+#define LFP_LABEL_BETA  1
+#define LFP_LABEL_NONE  255
+
+#define LFP_VERSION_MAJOR         ${LFP_VERSION_MAJOR}
+#define LFP_VERSION_MINOR         ${LFP_VERSION_MINOR}
+#define LFP_VERSION_PATCH         ${LFP_VERSION_PATCH}
+${define LFP_VERSION_PRERELEASE}
+#define LFP_VERSION_COMMIT_SHA    ${GIT_COMMIT}
+// clang-format on
+
+#define LFP_WORKSPACE_FOLDER R"(${LFP_WORKSPACE_FOLDER}\)"
+
+#define TARGET_BDS_PROTOCOL_VERSION 776
+
+#define LFP_VERSION_TO_STRING_INNER(ver) #ver
+#define LFP_VERSION_TO_STRING(ver)       LFP_VERSION_TO_STRING_INNER(ver)
+
+#ifdef LFP_VERSION_PRERELEASE
+#define LFP_FILE_VERSION_FLAG VS_FF_DEBUG
+#define LFP_FILE_VERSION_STRING                                                                    \
+    LFP_VERSION_TO_STRING(LFP_VERSION_MAJOR)                                                       \
+    "." LFP_VERSION_TO_STRING(LFP_VERSION_MINOR) "." LFP_VERSION_TO_STRING(LFP_VERSION_PATCH       \
+    ) "-" LFP_VERSION_PRERELEASE "+" LFP_VERSION_TO_STRING(LFP_VERSION_COMMIT_SHA)
+#else
+#define LFP_FILE_VERSION_FLAG 0x00000000L
+#define LFP_FILE_VERSION_STRING                                                                    \
+    LFP_VERSION_TO_STRING(LFP_VERSION_MAJOR)                                                       \
+    "." LFP_VERSION_TO_STRING(LFP_VERSION_MINOR) "." LFP_VERSION_TO_STRING(LFP_VERSION_PATCH       \
+    ) "+" LFP_VERSION_TO_STRING(LFP_VERSION_COMMIT_SHA)
+#endif

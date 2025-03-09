@@ -558,3 +558,5 @@ fabric.properties
 /.idea/
 /.vscode/
 /bin/
+!/src/debug/
+/src/debug/generated/*.cpp

@@ -2,12 +2,20 @@ on:
   release:
     types:
       - published
-  
+
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+          # - debug
+          - release
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: xmake-io/github-action-setup-xmake@v1
         # with:
@@ -21,20 +29,48 @@ jobs:
           restore-keys: |
             xmake-
 
+      - uses: microsoft/setup-msbuild@v2
+
       - run: |
           xmake repo -u
 
       - run: |
-          xmake f -a x64 -m release -p windows -y
+          xmake f -a x64 -m ${{ matrix.mode }} -p windows -v -y --publish=y
 
       - run: |
-          xmake -w -y
+          xmake -v -y
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
+          name: levifakeplayer-${{ matrix.mode }}-windows-x64-${{ github.sha }}
           path: |
             bin/
+
+  build-api:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+          # - debug
+          - release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+
+      - run: npm i && npm run publish
+        working-directory: lse-api
+
+      - run: cp lse-api/LICENSE lse-api/README.md lse-api/dist/
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: levifakeplayer-lse-api-${{ matrix.mode }}-${{ github.sha }}
+          path: |
+            lse-api/dist/
 
   update-release-notes:
     permissions:
@@ -42,14 +78,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+          
       - id: extract-release-notes
         uses: ffurrer2/extract-release-notes@v2
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
-          body: |
+          body: |-
             ${{ steps.extract-release-notes.outputs.release_notes }}
+
+            | File | SHA256 |
+            | ---- | ------ |
 
   upload-to-release:
     needs:
@@ -58,22 +99,54 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode:
+          # - debug
+          - release
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-windows-x64-${{ github.sha }}
-          path: artifact
+          name: levifakeplayer-${{ matrix.mode }}-windows-x64-${{ github.sha }}
+          path: mod
 
       - run: |
-          cp CHANGELOG.md LICENSE README.md artifact/
+          cp CHANGELOG.md COPYING COPYING.LESSER README.md mod/
 
       - run: |
-          zip -r ../${{ github.event.repository.name }}-windows-x64.zip *
-        working-directory: artifact
+          zip -r ../levifakeplayer-${{ matrix.mode }}-windows-x64.zip *
+        working-directory: mod
+      
+      - id: calculate-sha256
+        run: |
+          echo sha256=$(sha256sum levifakeplayer-${{ matrix.mode }}-windows-x64.zip | awk '{print $1}') >> $GITHUB_OUTPUT
 
-      - uses: softprops/action-gh-release@v1
+      - uses: actions/download-artifact@v4
         with:
+          name: levifakeplayer-lse-api-${{ matrix.mode }}-${{ github.sha }}
+          path: api
+
+      - run: |
+          cp lse-api/LICENSE lse-api/README.md api/
+
+      - run: |
+          zip -r ../levifakeplayer-lse-api-${{ matrix.mode }}.zip *
+        working-directory: api
+
+      - id: calculate-api-sha256
+        run: |
+          echo sha256=$(sha256sum levifakeplayer-lse-api-${{ matrix.mode }}.zip | awk '{print $1}') >> $GITHUB_OUTPUT
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          append_body: true
+          body: |-
+            | levifakeplayer-${{ matrix.mode }}-windows-x64.zip | ${{ steps.calculate-sha256.outputs.sha256 }} |
+            | levifakeplayer-lse-api-${{ matrix.mode }}.zip | ${{ steps.calculate-api-sha256.outputs.sha256 }} |
           files: |
-            ${{ github.event.repository.name }}-windows-x64.zip
+            levifakeplayer-${{ matrix.mode }}-windows-x64.zip
+            levifakeplayer-lse-api-${{ matrix.mode }}.zip
