@@ -5,7 +5,8 @@ npm i -y
 npm run test
 cd ..
 
-cp -r -Force lse-api\dist\lfp4lse*-test .\bin\
+mkdir -Force .\bin\
+cp -r -Force lse-api\dist\lfp4lsejs-test\ .\bin\
 
 cp .\lse-api\manifest.js.json .\bin\lfp4lsejs-test\manifest.json
 
