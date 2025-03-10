@@ -3,10 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "lfp/LeviFakePlayer.h"
 #include "lfp/utils/DebugUtils.h"
 #include "ll/api/command/EnumName.h"
-#include "mc/nbt/Tag.h"
 #include "mc/server/commands/CommandOutput.h"
 #include "mc/server/commands/CommandPosition.h"
 #include "mc/world/level/BlockPos.h"
@@ -185,13 +183,6 @@ void FakePlayerCommand::setup(LeviFakePlayerConfig::CommandConfig const& config)
         [](CommandOrigin const&, CommandOutput& output, LFPCommandWithString const& params) {
             auto& manager = FakePlayerManager::getManager();
             auto& name    = params.name;
-#ifdef LFP_DEBUG
-            lfp::LeviFakePlayer::getLogger().debug(
-                manager.tryGetFakePlayer(name)->getPlayerData()->toSnbt(
-                    SnbtFormat::PrettyConsolePrint
-                )
-            );
-#endif
             if (!name.empty()) {
                 if (manager.tryGetFakePlayer(name))
                     return output.error("FakePlayer {} already exists.");
