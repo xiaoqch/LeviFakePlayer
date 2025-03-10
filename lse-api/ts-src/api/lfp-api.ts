@@ -130,21 +130,19 @@ if (!getApiVersion || getApiVersion === EmptyApiFn) {
   );
 }
 
-export const LeviFakePlayerRawAPI = Object.freeze(
-  new (class FakeApi {
-    constructor() {
-      for (const name of Object.values(AllRawApi)) {
-        const fakeApi: RawApiFunc<any> = (...args: any[]) => {
-          // delay import
-          const actualApi = importRawApiWithCache(name) as RawApiFunc<any>;
-          (this as unknown as LeviFakePlayerRawAPI)[name] = actualApi;
-          return actualApi(...args);
-        };
-        (this as unknown as LeviFakePlayerRawAPI)[name] = fakeApi;
-      }
+export const LeviFakePlayerRawAPI = new (class {
+  constructor() {
+    for (const name of Object.values(AllRawApi)) {
+      const fakeApi: RawApiFunc<any> = (...args: any[]) => {
+        // delay import
+        const actualApi = importRawApiWithCache(name) as RawApiFunc<any>;
+        (this as unknown as LeviFakePlayerRawAPI)[name] = actualApi;
+        return actualApi(...args);
+      };
+      (this as unknown as LeviFakePlayerRawAPI)[name] = fakeApi;
     }
-  } as unknown as new () => LeviFakePlayerRawAPI)()
-);
+  }
+} as unknown as new () => LeviFakePlayerRawAPI)();
 
 function parseFakePlayerInfo(info: FakePlayerInfoType): FakePlayerInfo {
   if (typeof info == "string") return JSON.parse(info);
@@ -230,7 +228,7 @@ export namespace LeviFakePlayerAPI {
   export function setListenerNamespace(namespace: string) {
     listenerNamespace = namespace;
   }
-  
+
   export function subscribeEvent<T extends EventName>(
     eventName: T,
     callback: EventCallbackFunc<T>
