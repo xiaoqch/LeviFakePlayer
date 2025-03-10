@@ -137,37 +137,37 @@ if (!getApiVersion || getApiVersion === EmptyApiFn) {
 export const LeviFakePlayerRawAPI = new (class
   implements Required<LeviFakePlayerRawAPIInterface>
 {
-  constructor() {
-    for (const name of Object.values(AllRawApi)) {
-      const tmp: RawApiFunc<any> = (...args: any[]) => {
-        const tmp = (this[name] = importRawApiWithCache(
-          name
-        ) as RawApiFunc<any>);
-        return tmp(...args);
-      };
-      this[name] = tmp;
+    constructor() {
+      for (const name of Object.values(AllRawApi)) {
+        const tmp: RawApiFunc<any> = (...args: any[]) => {
+          const tmp = (this[name] = importRawApiWithCache(
+            name
+          ) as RawApiFunc<any>);
+          return tmp(...args);
+        };
+        this[name] = tmp;
+      }
     }
-  }
-  getApiVersion!: () => number;
-  getVersion!: () => string;
-  getOnlineList!: () => SimulatedPlayer[];
-  getInfo!: (name: string) => FakePlayerInfoType;
-  getAllInfo!: () => FakePlayerInfoType[];
-  list!: () => string[];
-  login!: (name: string) => SimulatedPlayer;
-  logout!: (name: string) => boolean;
-  create!: (name: string) => boolean;
-  createWithData!: (name: string, data: NbtCompound) => boolean;
-  createAt!: (name: string, position: IntPos) => SimulatedPlayer;
-  remove!: (name: string) => boolean;
-  setAutoLogin!: (name: string, autoLogin: boolean) => boolean;
-  importClientFakePlayer!: (name: string) => boolean;
-  subscribeEvent!: (
-    eventName: EventName,
-    callbackNamespace: string,
-    callbackName: string
-  ) => ListenerId;
-  unsubscribeEvent!: (listenerId: ListenerId) => boolean;
+    getApiVersion!: () => number;
+    getVersion!: () => string;
+    getOnlineList!: () => SimulatedPlayer[];
+    getInfo!: (name: string) => FakePlayerInfoType;
+    getAllInfo!: () => FakePlayerInfoType[];
+    list!: () => string[];
+    login!: (name: string) => SimulatedPlayer;
+    logout!: (name: string) => boolean;
+    create!: (name: string) => boolean;
+    createWithData!: (name: string, data: NbtCompound) => boolean;
+    createAt!: (name: string, position: IntPos) => SimulatedPlayer;
+    remove!: (name: string) => boolean;
+    setAutoLogin!: (name: string, autoLogin: boolean) => boolean;
+    importClientFakePlayer!: (name: string) => boolean;
+    subscribeEvent!: (
+      eventName: EventName,
+      callbackNamespace: string,
+      callbackName: string
+    ) => ListenerId;
+    unsubscribeEvent!: (listenerId: ListenerId) => boolean;
 })();
 
 function parseFakePlayerInfo(info: FakePlayerInfoType): FakePlayerInfo {
@@ -249,8 +249,8 @@ export namespace LeviFakePlayerAPI {
       handleFn: RemoteCallCallbackFn
     ];
   } = {};
-  let listenerNamespace = "";
-  let GlobalListenerId = 0;
+  let listenerNamespace = "lfp" + system.randomGuid().replace("-", "");
+  let globalListenerId = 0;
   export function setNamespace(namespace: string) {
     listenerNamespace = namespace;
   }
@@ -258,7 +258,7 @@ export namespace LeviFakePlayerAPI {
     eventName: T,
     callback: EventCallbackFunc<T>
   ): ListenerId | undefined {
-    const funcName = `${eventName}_${++GlobalListenerId}`;
+    const funcName = `${eventName}_${++globalListenerId}`;
     const tmpFunc: RemoteCallCallbackFn = (
       name: string,
       infoRaw: FakePlayerInfoType,
