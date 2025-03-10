@@ -1,6 +1,7 @@
 // A way to reference lse lib, this line will be remove in target and declare file by tsc
 import type {} from "./lib";
 // cSpell: words: dimid
+
 export const LEVIFAKEPLAYER_API_NAMESPACE = "LeviFakePlayerAPI";
 const SCRIPT_API_VERSION = 1;
 
@@ -20,6 +21,16 @@ export type RemoteCallCallbackFn = (
   player?: SimulatedPlayer
 ) => void;
 
+export interface FakePlayerInfo {
+  name: string;
+  xuid: string;
+  uuid: UuidString;
+  skinId: ``;
+  online: boolean;
+  autoLogin: boolean;
+  player: INFO_OBJECT_SUPPORTED extends true ? SimulatedPlayer : undefined;
+}
+
 export enum AllRawApi {
   getApiVersion = "getApiVersion",
   getVersion = "getVersion",
@@ -38,16 +49,6 @@ export enum AllRawApi {
   subscribeEvent = "subscribeEvent",
   unsubscribeEvent = "unsubscribeEvent",
 }
-
-export interface LeviFakePlayerEventMap {
-  create: [name: string, info: FakePlayerInfo];
-  remove: [name: string, info: FakePlayerInfo];
-  login: [name: string, info: FakePlayerInfo, player: SimulatedPlayer];
-  logout: [name: string, info: FakePlayerInfo];
-  update: [name: string, info: FakePlayerInfo];
-}
-
-type EventName = keyof LeviFakePlayerEventMap;
 
 // name: [ret,[...args]]
 interface LeviFakePlayerRawApiMap {
@@ -81,36 +82,34 @@ interface LeviFakePlayerRawApiMap {
   [AllRawApi.unsubscribeEvent]: [result: boolean, [listenerId: ListenerId]];
 }
 
-if (false) {
-  // Make sure all value of AllRawApis in LeviFakePlayerRawApiMap
-  ({}) as keyof LeviFakePlayerRawApiMap satisfies AllRawApi;
-  ({}) as AllRawApi satisfies keyof LeviFakePlayerRawApiMap;
+export interface LeviFakePlayerEventMap {
+  create: [name: string, info: FakePlayerInfo];
+  remove: [name: string, info: FakePlayerInfo];
+  login: [name: string, info: FakePlayerInfo, player: SimulatedPlayer];
+  logout: [name: string, info: FakePlayerInfo];
+  update: [name: string, info: FakePlayerInfo];
 }
-export interface FakePlayerInfo {
-  name: string;
-  xuid: string;
-  uuid: UuidString;
-  skinId: ``;
-  online: boolean;
-  autoLogin: boolean;
-  player: INFO_OBJECT_SUPPORTED extends true ? SimulatedPlayer : undefined;
-}
+type EventName = keyof LeviFakePlayerEventMap;
 
-type LeviFakePlayerRawAPIInterface = {
-  [name in keyof LeviFakePlayerRawApiMap]?: (
-    ...args: LeviFakePlayerRawApiMap[name][1]
-  ) => LeviFakePlayerRawApiMap[name][0];
+type RevertType<T extends `${AllRawApi}`> =
+  T extends `${infer S extends AllRawApi}` ? S : never;
+
+/** Raw RemoteCall API */
+export type LeviFakePlayerRawAPI = {
+  [name in `${AllRawApi}`]: (
+    ...args: LeviFakePlayerRawApiMap[RevertType<name>][1]
+  ) => LeviFakePlayerRawApiMap[RevertType<name>][0];
 };
 
-type RawApiFunc<T extends AllRawApi> = LeviFakePlayerRawAPIInterface[T];
+type RawApiFunc<T extends `${AllRawApi}`> = LeviFakePlayerRawAPI[T];
 type EventCallbackFunc<T extends keyof LeviFakePlayerEventMap> = (
   ...args: LeviFakePlayerEventMap[T]
 ) => void;
 
-const CachedRawApi: LeviFakePlayerRawAPIInterface = {};
+const CachedRawApi: Partial<LeviFakePlayerRawAPI> = {};
 const EmptyApiFn = (...args: any[]) => {};
 
-export function importRawApiWithCache<T extends keyof LeviFakePlayerRawApiMap>(
+export function importRawApiWithCache<T extends AllRawApi>(
   name: T
 ): RawApiFunc<T> {
   return (CachedRawApi[name] ??= ll.hasExported(
@@ -131,44 +130,21 @@ if (!getApiVersion || getApiVersion === EmptyApiFn) {
   );
 }
 
-/**
- * Raw RemoteCall Api
- */
-export const LeviFakePlayerRawAPI = new (class
-  implements Required<LeviFakePlayerRawAPIInterface>
-{
+export const LeviFakePlayerRawAPI = Object.freeze(
+  new (class FakeApi {
     constructor() {
       for (const name of Object.values(AllRawApi)) {
-        const tmp: RawApiFunc<any> = (...args: any[]) => {
-          const tmp = (this[name] = importRawApiWithCache(
-            name
-          ) as RawApiFunc<any>);
-          return tmp(...args);
+        const fakeApi: RawApiFunc<any> = (...args: any[]) => {
+          // delay import
+          const actualApi = importRawApiWithCache(name) as RawApiFunc<any>;
+          (this as unknown as LeviFakePlayerRawAPI)[name] = actualApi;
+          return actualApi(...args);
         };
-        this[name] = tmp;
+        (this as unknown as LeviFakePlayerRawAPI)[name] = fakeApi;
       }
     }
-    getApiVersion!: () => number;
-    getVersion!: () => string;
-    getOnlineList!: () => SimulatedPlayer[];
-    getInfo!: (name: string) => FakePlayerInfoType;
-    getAllInfo!: () => FakePlayerInfoType[];
-    list!: () => string[];
-    login!: (name: string) => SimulatedPlayer;
-    logout!: (name: string) => boolean;
-    create!: (name: string) => boolean;
-    createWithData!: (name: string, data: NbtCompound) => boolean;
-    createAt!: (name: string, position: IntPos) => SimulatedPlayer;
-    remove!: (name: string) => boolean;
-    setAutoLogin!: (name: string, autoLogin: boolean) => boolean;
-    importClientFakePlayer!: (name: string) => boolean;
-    subscribeEvent!: (
-      eventName: EventName,
-      callbackNamespace: string,
-      callbackName: string
-    ) => ListenerId;
-    unsubscribeEvent!: (listenerId: ListenerId) => boolean;
-})();
+  } as unknown as new () => LeviFakePlayerRawAPI)()
+);
 
 function parseFakePlayerInfo(info: FakePlayerInfoType): FakePlayerInfo {
   if (typeof info == "string") return JSON.parse(info);
@@ -211,7 +187,7 @@ export namespace LeviFakePlayerAPI {
    */
   export function create(
     name: string,
-    posOrData?: IntPos | NbtCompound
+    posOrData?: IntPos | FloatPos | NbtCompound
   ): FakePlayerInfo | undefined {
     let result = false;
     if (posOrData == undefined) {
@@ -251,9 +227,10 @@ export namespace LeviFakePlayerAPI {
   } = {};
   let listenerNamespace = "lfp" + system.randomGuid().replace("-", "");
   let globalListenerId = 0;
-  export function setNamespace(namespace: string) {
+  export function setListenerNamespace(namespace: string) {
     listenerNamespace = namespace;
   }
+  
   export function subscribeEvent<T extends EventName>(
     eventName: T,
     callback: EventCallbackFunc<T>
@@ -298,3 +275,9 @@ export namespace LeviFakePlayerAPI {
 }
 
 export default LeviFakePlayerAPI;
+
+if (false) {
+  // Make sure all value of AllRawApis in LeviFakePlayerRawApiMap
+  ({}) as keyof LeviFakePlayerRawApiMap satisfies AllRawApi;
+  ({}) as AllRawApi satisfies keyof LeviFakePlayerRawApiMap;
+}
