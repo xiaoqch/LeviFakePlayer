@@ -191,7 +191,7 @@ void FakePlayerCommand::setup(LeviFakePlayerConfig::CommandConfig const& config)
                 if (manager.tryGetFakePlayer(name))
                     return output.error("FakePlayer {} already exists.");
                 if (!manager.importData_JavaFakePlayer(name))
-                    return output.error("Unknown Error in FakePlayer {} data import", name);
+                    return output.error("Failed to import FakePlayer {} data", name);
                 output.success("FakePlayer {} data import success", name);
                 return;
             }

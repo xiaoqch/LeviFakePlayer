@@ -105,7 +105,6 @@ bool FakePlayerManager::importData_JavaFakePlayer(std::string const& name) {
     auto& dbStorage = ll::service::getLevel()->getLevelStorage();
     auto  tag = dbStorage.getCompoundTag("player_" + uuid.asString(), DBHelpers::Category::Player);
     if (!tag) {
-        logger.error("Error in getting PlayerStorageIds");
         return false;
     }
     auto& serverId = (*tag)["ServerId"].get<StringTag>();
