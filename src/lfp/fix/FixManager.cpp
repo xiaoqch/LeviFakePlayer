@@ -35,7 +35,7 @@ LL_TYPE_STATIC_HOOK(
 };
 
 
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_TYPE_INSTANCE_HOOK(
     FixAllSimulatedPlayerLogoutHook,
     ll::memory::HookPriority::Normal,
     ServerPlayer,

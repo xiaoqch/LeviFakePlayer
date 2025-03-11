@@ -23,7 +23,7 @@ namespace lfp::fix {
 
 // Save fake player data
 
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_TYPE_INSTANCE_HOOK(
     SavePlayerDataFix,
     ::ll::memory::HookPriority::Normal,
     LevelStorage,
@@ -45,7 +45,7 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
 }
 
 // load fake player data
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_TYPE_INSTANCE_HOOK(
     LoadPlayerDataFix,
     ll::memory::HookPriority::Normal,
     LevelStorage,
@@ -79,7 +79,7 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
 #if false
 
 // fix player identifiers before constructor
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_TYPE_INSTANCE_HOOK(
     PlayerIdsFix,
     ::ll::memory::HookPriority::Normal,
     ::SimulatedPlayer,
@@ -144,7 +144,7 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
 #else
 
 // fix player identifiers before constructor
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_TYPE_INSTANCE_HOOK(
     PlayerIdsFix,
     ::ll::memory::HookPriority::Normal,
     ::SimulatedPlayer,
