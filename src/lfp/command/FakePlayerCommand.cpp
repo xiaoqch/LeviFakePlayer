@@ -3,10 +3,13 @@
 #include <string>
 #include <vector>
 
+#include "lfp/Config.h"
 #include "lfp/utils/DebugUtils.h"
 #include "ll/api/command/EnumName.h"
 #include "mc/server/commands/CommandOutput.h"
 #include "mc/server/commands/CommandPosition.h"
+#include "mc/server/commands/CommandRegistry.h"
+#include "mc/world/Minecraft.h"
 #include "mc/world/level/BlockPos.h"
 #include "mc/world/level/dimension/Dimension.h"
 
@@ -50,7 +53,7 @@ struct LFPCreateCommand {
     ll::command::Optional<CommandPosition> pos;
     ll::command::Optional<DimensionType>   dim;
 };
-struct LFPCommandWithString {
+struct LFPCommandWithNameStr {
     std::string name;
 };
 
@@ -148,6 +151,7 @@ void FakePlayerCommand::setup(LeviFakePlayerConfig::CommandConfig const& config)
             }
         }
     );
+
     // lfp create <name: string> [pos: x y z] [dim: Dimension]
     command.overload<LFPCreateCommand>()
         .text("create")
@@ -179,8 +183,8 @@ void FakePlayerCommand::setup(LeviFakePlayerConfig::CommandConfig const& config)
         });
 
     // lfp import name
-    command.overload<LFPCommandWithString>().text("import").optional("name").execute(
-        [](CommandOrigin const&, CommandOutput& output, LFPCommandWithString const& params) {
+    command.overload<LFPCommandWithNameStr>().text("import").optional("name").execute(
+        [](CommandOrigin const&, CommandOutput& output, LFPCommandWithNameStr const& params) {
             auto& manager = FakePlayerManager::getManager();
             auto& name    = params.name;
             if (!name.empty()) {

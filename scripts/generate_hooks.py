@@ -10,7 +10,8 @@ include_path_list = [
     # "mc\\server\\ServerPlayer.h",
     # "mc\\server\\SimulatedPlayer.h",
     # "mc\\network\\LoopbackPacketSender.h",
-    "mc\\network\\ServerNetworkHandler.h",
+    # "mc\\network\\ServerNetworkHandler.h",
+    "mc\\server\\commands\\CommandRegistry.h",
     # "mc\\network\\PacketObserver.h",
     # "mc\\gametest\\MinecraftGameTestHelper.h",
 ]
@@ -96,11 +97,15 @@ def gen_hook_cpp(include_path):
             print(api)
             if api.startswith(f"{className}("):
                 continue
-            m = re.match(
-                r"^(?P<static>static )?(?P<rtn>.+[^,]) (?P<name>\$?[\w_]+)\((?P<params>.*) *\)( const)?;",
-                api,
-            ).groupdict()
-            print(m)
+            if not (
+                m := re.match(
+                    r"^(?P<static>static )?(?P<rtn>.+[^,]) (?P<name>\$?[\w_]+)\((?P<params>.*) *\)( const)?;",
+                    api,
+                )
+            ):
+                continue
+            groupdict=m.groupdict()
+            print(groupdict)
 
             def iter_params(params: str):
                 last_index = 0
@@ -146,21 +151,21 @@ def gen_hook_cpp(include_path):
             #         m["params"],
             #     ),
             # )
-            params = iter_params(m["params"])
+            params = iter_params(groupdict["params"])
             params = list(params)
             print(params)
             hook_type = (
                 "LL_AUTO_TYPE_STATIC_HOOK"
-                if m["static"]
+                if groupdict["static"]
                 else "LL_AUTO_TYPE_INSTANCE_HOOK"
             )
-            hook_id = f"HOOK_{className}_{m["name"]}"
+            hook_id = f"HOOK_{className}_{groupdict["name"]}"
             name_count[hook_id] += 1
             if name_count[hook_id] > 0:
                 hook_id = f"{hook_id}{name_count[hook_id]}"
-            hook_addr = f"&{className}::{m["name"]}"
+            hook_addr = f"&{className}::{groupdict["name"]}"
             hook_priority = "ll::memory::HookPriority::Normal"
-            hook_rtn = m["rtn"]
+            hook_rtn = groupdict["rtn"]
             alias_list = []
             if hook_rtn.find(",") >= 0:
                 alias_list.append(f"using {hook_id}_rtn = {hook_rtn};")
@@ -185,7 +190,7 @@ def gen_hook_cpp(include_path):
             call_name = "onHookCall"
             call_params = f'"{hook_id}"'
             if (
-                m["name"] == "$handle"
+                groupdict["name"] == "$handle"
                 and params[0]["type"] == "::NetworkIdentifier const&"
             ):
                 call_name = "onHandlePacket"

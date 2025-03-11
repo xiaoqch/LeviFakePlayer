@@ -72,7 +72,7 @@ ll::coro::CoroTask<void> testEntry() {
 #elif defined(NDEBUG)
     testLogger.warn("Testing in Release Mode");
 #endif
-    co_await 10_tick;
+    co_await 1_tick;
     auto result = co_await TestManager::getInstance().runAllTest();
     if (!result) {
         testLogger.error("Test Failed!!!");

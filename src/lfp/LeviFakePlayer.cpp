@@ -59,15 +59,21 @@ bool LeviFakePlayer::load() {
 bool LeviFakePlayer::enable() {
     getSelf().getLogger().debug("Enabling...");
 
-    auto& config = getConfig().config;
-    if (config.command.enabled) {
-        FakePlayerCommand::setup(config.command);
-#ifndef LFP_DEBUG
-        if (config.command.enableTickingCommand && *config.command.enableTickingCommand)
-#endif // always enabled in debug build
-            TickingCommand::setup();
-    }
     mFixManager->onPluginEnable();
+
+    ll::thread::ServerThreadExecutor::getDefault().executeAfter(
+        []() {
+            auto& config = lfp::LeviFakePlayer::getInstance().getConfig().config;
+            if (config.command.enabled) {
+                FakePlayerCommand::setup(config.command);
+#ifndef LFP_DEBUG
+                if (config.command.enableTickingCommand && *config.command.enableTickingCommand)
+#endif // always enabled in debug build
+                    TickingCommand::setup();
+            }
+        },
+        ll::chrono::ticks{1}
+    );
     // TODO: crash
     // auto& eventBus = ll::event::EventBus::getInstance();
     // auto stoppingListener = eventBus.emplaceListener<ll::event::ServerStoppingEvent>([](auto) {
