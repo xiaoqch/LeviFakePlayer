@@ -17,11 +17,19 @@ namespace lfp::test {
 
 extern ll::io::Logger& testLogger;
 
-bool executeCommandEx(
+struct CommandOutputResult {
+    bool        success      = false;
+    int         successCount = -1;
+    std::string output;
+};
+
+bool executeCommand(
     std::string const&                          command,
     ::std::function<void(int, ::std::string&&)> output = [](int, ::std::string&&) {},
     DimensionType                               dim    = 0
 );
+
+CommandOutputResult executeCommandEx(std::string const& command, DimensionType dim = 0);
 
 int getTickingChunkCount(
     BlockSource const& region,

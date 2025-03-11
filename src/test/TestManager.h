@@ -8,7 +8,7 @@
 namespace lfp::test {
 
 // Specific what test set
-#define TEST_THIS_SET_ONLY "FakePlayerSwapTest"
+#define TEST_THIS_SET_ONLY "OtherTest"
 #undef TEST_THIS_SET_ONLY
 
 class TestManager {

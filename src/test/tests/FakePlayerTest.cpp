@@ -62,7 +62,7 @@ LFP_CO_TEST(FakePlayerTest, Initialize) {
 LFP_CO_TEST(FakePlayerTest, Travel) {
     FakePlayerHolder fp(mSetName);
     auto&            sp = fp.login();
-    EXPECT_TRUE(executeCommandEx(fmt::format("tp @p {} 66 0", sp.getPosition().x + 1200)));
+    EXPECT_TRUE(executeCommand(fmt::format("tp @p {} 66 0", sp.getPosition().x + 1200)));
     EXPECT_TRUE(co_await waitForChunkLoaded(sp));
     // executeCommand(fmt::format("execute as @p at @p run setblock ~ ~ ~ portal"));
     EXPECT_TRUE(co_await teleportAndWaitPrepared(sp, {0, 66, 0}, DimensionType(1)));
@@ -70,7 +70,7 @@ LFP_CO_TEST(FakePlayerTest, Travel) {
     EXPECT_TRUE(co_await teleportAndWaitPrepared(sp, {10, 66, 0}, DimensionType(2)));
 
     // check end credit
-    executeCommandEx(fmt::format("/kill @e[type=ender_dragon]"));
+    executeCommand(fmt::format("/kill @e[type=ender_dragon]"));
     sp.teleport({1, 63, 0}, DimensionType(2));
     co_await 1_tick;
     EXPECT_TRUE(co_await waitUntil([&]() { return sp.getDimensionId().id == 0; }, 20 * 20_tick));
@@ -83,7 +83,7 @@ LFP_CO_TEST(FakePlayerTest, Travel) {
 LFP_CO_TEST(FakePlayerTest, Respawn) {
     FakePlayerHolder fp(mSetName);
     auto&            sp = fp.login();
-    EXPECT_TRUE(executeCommandEx(fmt::format("kill @a")));
+    EXPECT_TRUE(executeCommand(fmt::format("kill @a")));
     co_await 20_tick;
     EXPECT_TRUE(co_await waitForChunkLoaded(sp));
     co_await 1_tick;
@@ -141,7 +141,7 @@ LFP_CO_TEST(FakePlayerTest, RespawnPoint) {
     EXPECT_TRUE(nowPos.distanceTo(initialSpawn) < 16);
 
     // sp->setSpawnBlockRespawnPosition(testSpawn, 0);
-    executeCommandEx(fmt::format("spawnpoint @a {} {} {}", testSpawn.x, testSpawn.y, testSpawn.z));
+    executeCommand(fmt::format("spawnpoint @a {} {} {}", testSpawn.x, testSpawn.y, testSpawn.z));
     EXPECT_TRUE(sp->mPlayerRespawnPoint->mPlayerPosition->distanceTo(testSpawn) < 1);
     EXPECT_TRUE(co_await killAndWaitRespawn(*sp));
     nowPos = sp->getPosition();
@@ -201,8 +201,8 @@ LFP_CO_TEST(FakePlayerSwapTest, swapContainer) {
     auto&            sp1 = fp1.login();
     auto&            sp2 = fp2.login();
     EXPECT_TRUE(co_await waitForChunkLoaded(sp1));
-    EXPECT_TRUE(executeCommandEx(fmt::format("give {} apple 10", fp1->getRealName())));
-    EXPECT_TRUE(executeCommandEx(fmt::format("give {} stone 10", fp2->getRealName())));
+    EXPECT_TRUE(executeCommand(fmt::format("give {} apple 10", fp1->getRealName())));
+    EXPECT_TRUE(executeCommand(fmt::format("give {} stone 10", fp2->getRealName())));
     EXPECT_TRUE(getHandItemName(sp1) == "minecraft:apple");
     EXPECT_TRUE(getHandItemName(sp2) == "minecraft:stone");
     auto& manager = lfp::FakePlayerManager::getManager();
@@ -228,7 +228,7 @@ LFP_CO_TEST(FakePlayerSwapTest, swapContainer2) {
     co_await 1_tick;
 
     EXPECT_TRUE(co_await waitForChunkLoaded(sp1));
-    EXPECT_TRUE(executeCommandEx(fmt::format("give {} apple 10", fp1->getRealName())));
+    EXPECT_TRUE(executeCommand(fmt::format("give {} apple 10", fp1->getRealName())));
 
     auto& manager = lfp::FakePlayerManager::getManager();
     auto  tag1    = fp2->getPlayerData();
@@ -236,7 +236,7 @@ LFP_CO_TEST(FakePlayerSwapTest, swapContainer2) {
     auto tag2 = fp2->getPlayerData();
     auto diff = lfp::utils::nbt_utils::tagDiff(*tag1, *tag2);
     EXPECT_TRUE(diff.first && diff.second && diff.first->contains("Mainhand"));
-    EXPECT_TRUE(executeCommandEx(fmt::format("give {} stone 10", fp1->getRealName())));
+    EXPECT_TRUE(executeCommand(fmt::format("give {} stone 10", fp1->getRealName())));
     auto& sp2 = fp2.login();
     EXPECT_TRUE(co_await waitForChunkLoaded(sp2));
     auto tag3 = fp2->getRuntimePlayerData();

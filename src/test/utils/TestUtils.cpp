@@ -12,6 +12,7 @@
 
 #include "lfp/command/TickingCommand.h"
 #include "lfp/utils/NbtUtils.h"
+#include <string>
 
 namespace lfp::test {
 
@@ -19,7 +20,8 @@ namespace {
 constexpr auto PrintTickingDetail = false;
 }; // namespace
 
-bool executeCommandEx(
+
+bool executeCommand(
     std::string const&                          command,
     ::std::function<void(int, ::std::string&&)> output,
     DimensionType                               dim
@@ -37,6 +39,25 @@ bool executeCommandEx(
     return ll::service::getMinecraft()->mCommands->executeCommand(context, false).mSuccess;
 }
 
+CommandOutputResult executeCommandEx(std::string const& command, DimensionType dim) {
+    CommandOutputResult commandResult;
+    auto                context = CommandContext(
+        command,
+        std::make_unique<ScriptCommandOrigin>(
+            ll::service::getLevel()->asServer(),
+            ll::service::getLevel()->getOrCreateDimension(dim).lock().get(),
+            [&](int count, ::std::string&& output) {
+                commandResult.successCount = count;
+                commandResult.output       = output;
+            },
+            CommandPermissionLevel::Owner
+        ),
+        CommandVersion::CurrentVersion()
+    );
+    auto result           = ll::service::getMinecraft()->mCommands->executeCommand(context, false);
+    commandResult.success = result.mSuccess;
+    return commandResult;
+}
 
 int getTickingChunkCount(BlockSource const& region, BlockPos const& bpos, int range, bool print) {
     auto [info, count] = lfp::genTickingInfo(region, bpos, range);

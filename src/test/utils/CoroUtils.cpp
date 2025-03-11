@@ -54,7 +54,7 @@ ll::coro::CoroTask<bool> waitForRespawn(SimulatedPlayer& sp, ll::coro::Duration 
 };
 
 ll::coro::CoroTask<bool> killAndWaitRespawn(SimulatedPlayer& sp, ll::coro::Duration timeout) {
-    executeCommandEx("kill @a");
+    executeCommand("kill @a");
     // TODO:
     co_await (3 * 20_tick);
     MobEffect::DAMAGE_RESISTANCE()->applyEffects(sp, ::EffectDuration::INFINITE_DURATION(), 999);
