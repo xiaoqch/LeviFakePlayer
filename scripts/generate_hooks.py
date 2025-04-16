@@ -11,7 +11,8 @@ include_path_list = [
     # "mc\\server\\SimulatedPlayer.h",
     # "mc\\network\\LoopbackPacketSender.h",
     # "mc\\network\\ServerNetworkHandler.h",
-    "mc\\server\\commands\\CommandRegistry.h",
+    # "mc\\server\\commands\\CommandRegistry.h",
+    "mc\\world\\inventory\\network\\PlayerContainerSetter.h",
     # "mc\\network\\PacketObserver.h",
     # "mc\\gametest\\MinecraftGameTestHelper.h",
 ]
@@ -27,6 +28,8 @@ ignore_list = {
     "HOOK_SimulatedPlayer_$aiStep1",  # 3980
     "HOOK_SimulatedPlayer_preAiStep1",  # 3944
     "HOOK_SimulatedPlayer__updateRidingComponents1",  # 3944
+    "HOOK_SimulatedPlayer_$getXuid1",
+    
     "HOOK_ServerPlayer_$getEditorPlayer1",  # 655821
     "HOOK_ServerPlayer_$isActorRelevant1",  # 238055
     "HOOK_ServerPlayer_addActorToReplicationList1",  # 219451
@@ -47,6 +50,7 @@ ignore_list = {
     "HOOK_ServerPlayer_$isValidTarget1",  # 848
     # "HOOK_ServerPlayer_$sendNetworkPacket1",# 528
     "HOOK_ServerPlayer_$getCurrentStructureFeature1",  # 211
+    
     "HOOK_Player_$canInteractWithOtherEntitiesInGame1",  # 5704
     "HOOK_Player_$isSleeping1",  # 2173
     "HOOK_Player_$hasDiedBefore1",  # 1911
@@ -69,6 +73,7 @@ ignore_list = {
     "HOOK_Player_$getItemUseIntervalProgress1",  # 309
     "HOOK_Player_$getItemUseStartupProgress1",  # 309
     "HOOK_Player_$_hurt1",  # 256
+    
     "HOOK_ServerNetworkHandler__buildSubChunkPacketData1",  # 2988
     "HOOK_ServerNetworkHandler_$_getServerPlayer1",  # 2617
     "HOOK_ServerNetworkHandler_$onTick1",  # 1255

@@ -96,7 +96,6 @@ void FakePlayerCommand::setup(LeviFakePlayerConfig::CommandConfig const& config)
     }
     initSoftEnum();
 
-
     auto& command = ll::command::CommandRegistrar::getInstance()
                         .getOrCreateCommand(
                             FULL_COMMAND_NAME,

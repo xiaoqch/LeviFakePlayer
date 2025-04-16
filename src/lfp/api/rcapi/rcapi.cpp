@@ -5,11 +5,12 @@
 #include <utility>
 #include <vector>
 
-
 #include "RemoteCallAPI.h"
 #include "ll/api/event/EventBus.h"
 #include "ll/api/event/ListenerBase.h"
+#include "ll/api/utils/ErrorUtils.h"
 
+#include "lfp/LeviFakePlayer.h"
 #include "lfp/Version.h"
 #include "lfp/api/events/FakePlayerCreatedEvent.h"
 #include "lfp/api/events/FakePlayerJoinEvent.h"
@@ -20,6 +21,7 @@
 #include "lfp/manager/FakePlayer.h"
 #include "lfp/manager/FakePlayerManager.h"
 #include "lfp/utils/DebugUtils.h"
+
 
 #define FAKE_PLAYER_API_DEBUG
 #if defined(FAKE_PLAYER_API_DEBUG) && !defined(LFP_DEBUG)
@@ -230,11 +232,17 @@ ll::event::ListenerId subscribeEvent(
     return subscribeEventImpl(
         *eventType,
         [handleFn = std::move(handleFn)](event::FakePlayerEventBase const& ev) {
-            handleFn(
-                ev.name(),
-                InfoFromFakePlayer(ev.fakePlayer()).toJson(),
-                ev.fakePlayer().getRuntimePlayer()
-            );
+            try {
+                handleFn(
+                    ev.name(),
+                    InfoFromFakePlayer(ev.fakePlayer()).toJson(),
+                    ev.fakePlayer().getRuntimePlayer()
+                );
+            } catch (...) {
+                auto& logger = lfp::LeviFakePlayer::getLogger();
+                logger.error("Error occurred in api event callback");
+                ll::error_utils::printCurrentException(logger);
+            }
         }
     );
 }

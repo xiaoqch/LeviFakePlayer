@@ -210,7 +210,7 @@ void handle(SimulatedPlayer& sp, MovePlayerPacket const& packet) {
 }
 
 // Fix weapon and armor display
-void handle(SimulatedPlayer& sp, InventorySlotPacket const& packet) {
+void handle(SimulatedPlayer& sp, [[maybe_unused]] InventorySlotPacket const& packet) {
 #ifdef LFP_DEBUG
     DEBUGW("({})::handle - {}", sp.getNameTag(), packetToString(packet));
     auto ctn = sp.mContainerManager;
@@ -219,14 +219,14 @@ void handle(SimulatedPlayer& sp, InventorySlotPacket const& packet) {
 }
 
 // Fix weapon and armor display
-void handle(SimulatedPlayer& sp, PlayerHotbarPacket const& packet) {
+void handle(SimulatedPlayer& sp, [[maybe_unused]] PlayerHotbarPacket const& packet) {
     DEBUGW("({})::handle - {}", sp.getNameTag(), packetToString(packet));
     auto ctn = sp.mContainerManager;
     if (ctn) sp.refreshContainer(*ctn);
 }
 
 
-void handle(SimulatedPlayer& sp, MobEquipmentPacket const& packet) {
+void handle(SimulatedPlayer& sp, [[maybe_unused]] MobEquipmentPacket const& packet) {
 #ifdef LFP_DEBUG
     DEBUGW("({})::handle - {}", sp.getNameTag(), packetToString(packet));
     // if (packet.mRuntimeId == sp.getRuntimeID()) {
@@ -235,7 +235,7 @@ void handle(SimulatedPlayer& sp, MobEquipmentPacket const& packet) {
 #endif // LFP_DEBUG
 }
 
-void handle(SimulatedPlayer& sp, NetworkChunkPublisherUpdatePacket const& packet) {
+void handle(SimulatedPlayer& sp, [[maybe_unused]] NetworkChunkPublisherUpdatePacket const& packet) {
 #ifdef LFP_DEBUG
     if (packet.mServerBuiltChunks->size() > 49) {
         SetLocalPlayerAsInitializedPacket pkt;
@@ -908,7 +908,7 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
 }
 
 
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_TYPE_INSTANCE_HOOK(
     LFP_ServerPlayer_$_updateChunkPublisherView,
     ll::memory::HookPriority::Normal,
     ServerPlayer,

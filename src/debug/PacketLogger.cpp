@@ -338,7 +338,7 @@ namespace fmt {
 template <>
 class formatter<MinecraftPacketIds> : public formatter<char*> {
 public:
-auto format(auto const& id, auto& context) {
+    auto format(auto const& id, auto& context) {
         return __super::format(PacketNames[(int)id], context);
     }
 };
@@ -368,7 +368,7 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
     case MinecraftPacketIds::ServerboundDiagnosticsPacket:
     case MinecraftPacketIds::FullChunkData:
     case MinecraftPacketIds::Animate:
-    break;
+        break;
     default:
         fmt::println("Handle packet<{:3}> {}", (int)packetId, packetId);
     }
@@ -400,7 +400,8 @@ LL_AUTO_TYPE_INSTANCE_HOOK(
     case MinecraftPacketIds::LevelEventGeneric:
     case MinecraftPacketIds::LevelSoundEvent:
     case MinecraftPacketIds::FullChunkData:
-    break;
+    case MinecraftPacketIds::CurrentStructureFeaturePacket:
+        break;
     default:
         fmt::println("Send   packet<{:3}> {}", (int)packetId, packetId);
     }

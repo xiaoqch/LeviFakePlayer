@@ -127,6 +127,7 @@ public:
         if (fp) return login(*fp);
         return nullptr;
     }
+    
     template <ValidFakePlayerIndex T>
     inline bool logout(T const& id) {
         auto fp = tryGetFakePlayer(id);

@@ -94,12 +94,13 @@ void onHandlePacket(NetworkIdentifier const&, std::shared_ptr<Pkt> packet) {
 }
 
 
-// #define HOOK_Player
-// #define HOOK_ServerPlayer
-// #define HOOK_SimulatedPlayer
-// #define HOOK_ServerNetworkHandler
+#define HOOK_Player
+#define HOOK_ServerPlayer
+#define HOOK_SimulatedPlayer
+#define HOOK_ServerNetworkHandler
 // #define HOOK_MinecraftGameTestHelper
-// #define HOOK_LoopbackPacketSender
+#define HOOK_LoopbackPacketSender
 // #define HOOK_PacketObserver
+#define HOOK_PlayerContainerSetter
 
 #endif
