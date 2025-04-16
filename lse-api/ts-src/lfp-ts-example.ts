@@ -1,4 +1,3 @@
-import type {} from "./api/lib";
 import {
   type FakePlayerInfo,
   type SimulatedPlayer,
@@ -8,7 +7,7 @@ import {
 ll.registerPlugin(
   "lfp-ts-example",
   "Example Typescript Plugin for LeviFakePlayer API",
-  [0, 0, 0],
+  [0, 0, 1],
   { license: "CC0-1.0" }
 );
 
@@ -35,7 +34,7 @@ class LeviFakePlayer {
     if (this.autoLogin) this.login();
   }
   get player() {
-    this._player ??= mc.getPlayer(this.name);
+    this._player ??= mc.getPlayer(this.uuid);
     return this._player;
   }
   set player(val: SimulatedPlayer | undefined) {
@@ -96,8 +95,11 @@ const LeviFakePlayerManager = new (class {
       fp.update(info);
     });
   }
-  create(...args: Parameters<typeof LFPAPI.create>) {
-    const info = LFPAPI.create(...args);
+  create(name: string): boolean;
+  create(name: string, pos: IntPos | FloatPos): boolean;
+  create(name: string, data: NbtCompound): boolean;
+  create(name: string, posOrData?: any) {
+    const info = LFPAPI.create(name, posOrData);
     // if (info)
     //     this.fpList[info.name] = new LeviFakePlayer(info)
     return info !== undefined;

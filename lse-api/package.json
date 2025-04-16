@@ -4,7 +4,8 @@
   "main": "./lib/lfp-api.js",
   "typings": "./lib/lfp-api.d.ts",
   "devDependencies": {
-    "typescript": "^5.8.2"
+    "@levimc-lse/types": "^2.14.1",
+    "typescript": "^5.8.3"
   },
   "scripts": {
     "test": "tsc",

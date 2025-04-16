@@ -1,5 +1,3 @@
-// A way to reference lse lib, this line will be remove in target and declare file by tsc
-import type {} from "./lib";
 // cSpell: words: dimid
 
 export const LEVIFAKEPLAYER_API_NAMESPACE = "LeviFakePlayerAPI";
@@ -28,7 +26,7 @@ export interface FakePlayerInfo {
   skinId: ``;
   online: boolean;
   autoLogin: boolean;
-  player: INFO_OBJECT_SUPPORTED extends true ? SimulatedPlayer : undefined;
+  player: SimulatedPlayer | undefined;
 }
 
 export enum AllRawApi {
@@ -130,6 +128,7 @@ if (!getApiVersion || getApiVersion === EmptyApiFn) {
   );
 }
 
+// Raw Api Initialize
 export const LeviFakePlayerRawAPI = new (class {
   constructor() {
     for (const name of Object.values(AllRawApi)) {
@@ -145,7 +144,11 @@ export const LeviFakePlayerRawAPI = new (class {
 } as unknown as new () => LeviFakePlayerRawAPI)();
 
 function parseFakePlayerInfo(info: FakePlayerInfoType): FakePlayerInfo {
-  if (typeof info == "string") return JSON.parse(info);
+  if (typeof info == "string") {
+    const infoObj: FakePlayerInfo = JSON.parse(info);
+    infoObj.player = infoObj.online ? mc.getPlayer(infoObj.uuid) : undefined;
+    return infoObj;
+  }
   return info;
 }
 
@@ -183,6 +186,15 @@ export namespace LeviFakePlayerAPI {
   /**
    * FakePlayer created with pos will login immediately
    */
+  export function create(name: string): FakePlayerInfo | undefined;
+  export function create(
+    name: string,
+    pos?: IntPos | FloatPos
+  ): FakePlayerInfo | undefined;
+  export function create(
+    name: string,
+    data: NbtCompound
+  ): FakePlayerInfo | undefined;
   export function create(
     name: string,
     posOrData?: IntPos | FloatPos | NbtCompound

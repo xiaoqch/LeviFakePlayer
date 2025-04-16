@@ -1,5 +1,3 @@
-import type {} from "../api/lib";
-
 export let TestErrorCounter = 0;
 export function EXPECT_TRUE(val: any) {
   if (!val) {
