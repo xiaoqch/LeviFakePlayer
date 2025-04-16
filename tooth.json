@@ -21,7 +21,7 @@
       "platform": "win-x64",
       "dependencies": {
         "github.com/LiteLDev/LegacyRemoteCall": "0.10.x",
-        "github.com/LiteLDev/LeviLamina": "1.1.0"
+        "github.com/LiteLDev/LeviLamina": "1.1.1"
       },
       "assets": [
         {
