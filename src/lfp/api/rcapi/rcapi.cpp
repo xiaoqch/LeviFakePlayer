@@ -35,8 +35,6 @@
         #name,                                                                                     \
         lfp::api::rcapi::name                                                                      \
     )
-#define ExportRemoteCallApiAs(name)                                                                \
-    RemoteCall::exportAs<decltype(*name)>(LEVIFAKEPLAYER_NAMESPACE, #name, *name)
 
 namespace lfp::api {
 
@@ -271,6 +269,7 @@ bool ExportRemoteCallApis() {
 
     return res;
 }
+
 ll::event::ListenerId subscribeEventImpl(
     EventType                                                eventType,
     std::function<void(event::FakePlayerEventBase const&)>&& callback
@@ -299,5 +298,7 @@ ll::event::ListenerId subscribeEventImpl(
     }
     return listener->getId();
 };
+
+void RemoveRemoteCallApis() { RemoteCall::removeNameSpace(LEVIFAKEPLAYER_NAMESPACE); }
 
 } // namespace lfp::api

@@ -92,6 +92,11 @@ bool LeviFakePlayer::disable() {
     return true;
 }
 
+bool LeviFakePlayer::unload() {
+    getSelf().getLogger().debug("Unloading...");
+    return true;
+}
+
 LL_REGISTER_MOD(lfp::LeviFakePlayer, lfp::LeviFakePlayer::getInstance());
 
 } // namespace lfp

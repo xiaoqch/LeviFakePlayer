@@ -102,6 +102,7 @@ LFPNDAPI ll::event::ListenerId subscribeEventImpl(
 #ifdef LFP_EXPORT
 
 [[nodiscard]] bool ExportRemoteCallApis();
+void               RemoveRemoteCallApis();
 
 static_assert(
     ll::reflection::is_reflectable_v<FakePlayerInfo>,
