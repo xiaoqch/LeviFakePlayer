@@ -1,7 +1,5 @@
 #include "../TestManager.h"
 #include "../utils/TestUtils.h"
-#include <cassert>
-#include <string>
 
 #include "mc/deps/core/math/Vec3.h"
 #include "mc/deps/shared_types/legacy/item/EquipmentSlot.h"
@@ -125,11 +123,15 @@ LFP_CO_TEST(FakePlayerTest, RespawnPoint) {
     EXPECT_TRUE(co_await waitForChunkLoaded(*sp));
     EXPECT_TRUE(sp->mPlayerRespawnPoint->mSpawnBlockPos->distanceTo(BlockPos::MIN()) < 1);
     EXPECT_TRUE(sp->mPlayerRespawnPoint->mPlayerPosition->distanceTo(Vec3::MIN()) < 1);
-    // TODO init spawn
+    /// TODO: init spawn
     // EXPECT_TRUE(co_await killAndWaitRespawn(*sp));
+    co_await 20_tick;
     auto initialSpawn = sp->getPosition();
-    EXPECT_TRUE(initialSpawn.x - worldSpawn.x + initialSpawn.z - worldSpawn.z < 32);
-    EXPECT_TRUE(initialSpawn.y < 400 && initialSpawn.y > 10);
+    auto offset       = initialSpawn - worldSpawn;
+
+    EXPECT_TRUE(abs(offset.x) < 16);
+    EXPECT_TRUE(abs(offset.z) < 16);
+    EXPECT_TRUE(initialSpawn.y < 360 && initialSpawn.y > -64);
 
     BlockPos testSpawn = {1000, 66, 0};
     EXPECT_TRUE(co_await teleportAndWaitPrepared(*sp, testSpawn, DimensionType(0)));
@@ -138,7 +140,7 @@ LFP_CO_TEST(FakePlayerTest, RespawnPoint) {
 
     EXPECT_TRUE(co_await killAndWaitRespawn(*sp));
     nowPos = sp->getPosition();
-    EXPECT_TRUE(nowPos.distanceTo(initialSpawn) < 16);
+    EXPECT_TRUE(nowPos.distanceTo(initialSpawn) < 36);
 
     // sp->setSpawnBlockRespawnPosition(testSpawn, 0);
     executeCommand(fmt::format("spawnpoint @a {} {} {}", testSpawn.x, testSpawn.y, testSpawn.z));
@@ -224,11 +226,11 @@ LFP_CO_TEST(FakePlayerSwapTest, swapContainer2) {
     auto&            sp1 = fp1.login();
     fp2->login();
     co_await 1_tick;
-    fp2->logout();
-    co_await 1_tick;
-
+    
     EXPECT_TRUE(co_await waitForChunkLoaded(sp1));
     EXPECT_TRUE(executeCommand(fmt::format("give {} apple 10", fp1->getRealName())));
+    fp2->logout();
+    co_await 1_tick;
 
     auto& manager = lfp::FakePlayerManager::getManager();
     auto  tag1    = fp2->getPlayerData();

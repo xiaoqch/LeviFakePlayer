@@ -59,6 +59,7 @@ bool LeviFakePlayer::load() {
 bool LeviFakePlayer::enable() {
     getSelf().getLogger().debug("Enabling...");
 
+    mManager->reload();
     mFixManager->onPluginEnable();
 
     auto& config = lfp::LeviFakePlayer::getInstance().getConfig().config;
@@ -69,11 +70,7 @@ bool LeviFakePlayer::enable() {
 #endif // always enabled in debug build
             TickingCommand::setup();
     }
-    // TODO: crash
-    // auto& eventBus = ll::event::EventBus::getInstance();
-    // auto stoppingListener = eventBus.emplaceListener<ll::event::ServerStoppingEvent>([](auto) {
-    //     lfp::FakePlayerManager::getManager().savePlayers();
-    // });
+    
     ll::thread::ServerThreadExecutor::getDefault().executeAfter(
         []() {
             for (auto& fp : lfp::FakePlayerManager::getManager().iter()) {
@@ -94,6 +91,9 @@ bool LeviFakePlayer::disable() {
 
 bool LeviFakePlayer::unload() {
     getSelf().getLogger().debug("Unloading...");
+    for (auto& fp : lfp::FakePlayerManager::getManager().iter(true)) {
+        fp.logout(true);
+    };
     return true;
 }
 

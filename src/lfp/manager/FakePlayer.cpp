@@ -1,19 +1,16 @@
-#include "FakePlayer.h"
+#pragma once
 
-#include <cassert>
-#include <memory>
-#include <string>
+#include "FakePlayer.h"
 
 #include "mc/common/SubClientId.h"
 #include "mc/dataloadhelper/DefaultDataLoadHelper.h"
 #include "mc/deps/core/math/Vec3.h"
-#include "mc/entity/components/ActorUniqueIDComponent.h"
 #include "mc/gametest/MinecraftGameTestHelper.h"
 #include "mc/legacy/ActorUniqueID.h"
 #include "mc/nbt/CompoundTag.h"
 #include "mc/nbt/Int64Tag.h"
 #include "mc/nbt/ListTag.h"
-#include "mc/nbt/Tag.h"
+#include "mc/network/NetworkIdentifier.h"
 #include "mc/platform/UUID.h"
 #include "mc/scripting/modules/gametest/ScriptSimulatedPlayer.h"
 #include "mc/server/SimulatedPlayer.h"
@@ -38,11 +35,10 @@
 
 namespace lfp::inline manager {
 
-FakePlayer*       FakePlayer::mLoggingInPlayer = nullptr;
+FakePlayer*       FakePlayer::sLoggingInPlayer = nullptr;
 NetworkIdentifier FakePlayer::FAKE_NETWORK_ID(NetworkIdentifier::INVALID_ID());
 
 constexpr SubClientId INVALID_SUB_CLIENT_ID = SubClientId::PrimaryClient;
-
 
 SubClientId FakePlayer::getNextClientSubId() {
     static unsigned char currentCliendSubId = 1 + static_cast<unsigned char>(SubClientId::Client4);
@@ -57,15 +53,17 @@ FakePlayer::FakePlayer(
     FakePlayerManager& manager,
     std::string        realName,
     mce::UUID          uuid,
+    ActorUniqueID      auid,
     time_t             lastOnlineTime,
     bool               autoLogin
 )
 : mManager(manager),
   mRealName(std::move(realName)),
   mUuid(uuid),
+  mUniqueId(auid),
   mLastOnlineTime(lastOnlineTime),
   mAutoLogin(autoLogin) {
-    mClientSubId = INVALID_SUB_CLIENT_ID;
+    mSenderSubId = INVALID_SUB_CLIENT_ID;
     mXuid        = lfp::utils::sp_utils::xuidFromUuid(mUuid);
     DEBUGL(
         "FakePlayer::FakePlayer({}, {}, {}, {}",
@@ -81,6 +79,7 @@ FakePlayer::~FakePlayer() { DEBUGL("FakePlayer::~FakePlayer() - {}", mRealName);
 bool FakePlayer::serialize(CompoundTag& tag) const {
     tag["realName"]       = mRealName;
     tag["uuid"]           = mUuid.asString();
+    tag["uniqueId"]       = mUniqueId.rawID;
     tag["lastOnlineTime"] = mLastOnlineTime;
     tag["autoLogin"]      = mAutoLogin;
     return true;
@@ -93,17 +92,18 @@ FakePlayer::deserialize(CompoundTag const& tag, FakePlayerManager* manager) {
         if (manager == nullptr) {
             manager = &lfp::FakePlayerManager::getManager();
         }
-        std::string name           = tag["realName"];
-        std::string suuid          = tag["uuid"];
-        auto        uuid           = mce::UUID::fromString(suuid);
-        time_t      lastOnlineTime = tag["lastOnlineTime"].get<Int64Tag>();
-        bool        autoLogin      = tag["autoLogin"].get<ByteTag>();
+        std::string   name           = tag["realName"];
+        std::string   suuid          = tag["uuid"];
+        auto          uuid           = mce::UUID::fromString(suuid);
+        time_t        lastOnlineTime = tag["lastOnlineTime"].get<Int64Tag>();
+        bool          autoLogin      = tag["autoLogin"].get<ByteTag>();
+        ActorUniqueID auid           = ActorUniqueID{tag["uniqueId"].get<Int64Tag>()};
         if (name.empty() || !uuid) {
             auto& logger = LeviFakePlayer::getLogger();
             logger.info("FakePlayer Data Error, name: {}, uuid: {}", name, suuid);
             return {};
         }
-        return std::make_unique<FakePlayer>(*manager, name, uuid, lastOnlineTime, autoLogin);
+        return std::make_unique<FakePlayer>(*manager, name, uuid, auid, lastOnlineTime, autoLogin);
     } catch (...) {
         auto& logger = LeviFakePlayer::getLogger();
         logger.error("Error in " __FUNCTION__);
@@ -119,34 +119,38 @@ std::unique_ptr<CompoundTag> FakePlayer::serialize() const {
 
 
 bool FakePlayer::login() {
-    if (mOnline || mLoggingInPlayer) return false;
-    mLoggingInPlayer = this;
-    if (mClientSubId == SubClientId::PrimaryClient) {
-        mClientSubId = getNextClientSubId();
+    if (mOnline || sLoggingInPlayer) return false;
+    sLoggingInPlayer = this;
+    if (mSenderSubId == SubClientId::PrimaryClient) {
+        mSenderSubId = getNextClientSubId();
     }
     LeviFakePlayer::getInstance().getFixManager().beforeFakePlayerLogin();
     mCachedTag = mManager.loadPlayerData(*this);
 
-    // TODO: Fix for FakePlayerSwapTest
+    /// TODO: Fix for FakePlayerSwapTest
     auto TEMP_FIX_DataBeforeLogin =
         mCachedTag ? mCachedTag->clone() : std::unique_ptr<CompoundTag>();
 
-    auto dim  = ll::service::getLevel()->getLastOrDefaultSpawnDimensionId(3);
-    auto bpos = ll::service::getLevel()->asServer().getLevelData().getSpawnPos();
-    auto uid  = ActorUniqueID::INVALID_ID();
+    auto                dim    = ll::service::getLevel()->getLastOrDefaultSpawnDimensionId(3);
+    auto                bpos   = ll::service::getLevel()->asServer().getLevelData().getSpawnPos();
+    std::optional<Vec3> offset = {};
+    std::optional<Vec2> rotation{};
+    // std::optional<ActorUniqueID> auid = ActorUniqueID::INVALID_ID();
     try {
         if (mCachedTag) {
             auto& tag = *mCachedTag;
-            auto  pos = utils::nbt_utils::toVec3(tag["Pos"].get<ListTag>());
-            bpos      = {pos.x, pos.y - 1.60001f, pos.z};
-            dim       = (int)tag["DimensionId"];
-            uid       = (ActorUniqueID)tag["UniqueID"].get<Int64Tag>();
+            auto  pos = utils::nbt_utils::toVec3(tag["Pos"].get());
+            if (pos) bpos = *pos - Vec3{0, 1.6, 0};
+            dim = (int)tag["DimensionId"];
+            // auid     = (ActorUniqueID)tag["UniqueID"].get<Int64Tag>();
+            rotation = utils::nbt_utils::toVec2(tag["Rotation"].get());
         } else if (mCreateAt) {
             bpos = mCreateAt->first;
             dim  = mCreateAt->second;
         }
-        mUniqueId = uid;
-        mPlayer   = lfp::utils::sp_utils::create(mRealName, bpos, dim, mXuid);
+
+        mPlayer =
+            lfp::utils::sp_utils::create(mRealName, bpos, dim, mXuid, mUniqueId, offset, rotation);
 #ifdef LFP_DEBUG
         auto oldData = getSavedPlayerData();
         if (oldData) {
@@ -166,11 +170,11 @@ bool FakePlayer::login() {
         // }
 #endif
     } catch (...) {
-        mLoggingInPlayer = nullptr;
+        sLoggingInPlayer = nullptr;
         mCachedTag.reset();
         throw;
     }
-    mLoggingInPlayer = nullptr;
+    sLoggingInPlayer = nullptr;
 
     if (!mPlayer) return false;
 
@@ -178,8 +182,8 @@ bool FakePlayer::login() {
         DefaultDataLoadHelper ddlh{};
         mPlayer->load(*TEMP_FIX_DataBeforeLogin, ddlh);
     }
-    mUniqueId    = mPlayer->getOrCreateUniqueID();
-    mClientSubId = mPlayer->getClientSubId();
+    // mUniqueId    = mPlayer->getOrCreateUniqueID();
+    // mSenderSubId = mPlayer->getClientSubId();
     time(&mLastOnlineTime);
 
     mOnline = true;
@@ -209,7 +213,8 @@ bool FakePlayer::logout(bool save) {
     mOnline = false;
     mPlayer = nullptr;
     LeviFakePlayer::getInstance().getFixManager().afterFakePlayerLogout();
-    // mClientSubID = -1;
+    // mSenderSubId = -1;
+
     return true;
 }
 

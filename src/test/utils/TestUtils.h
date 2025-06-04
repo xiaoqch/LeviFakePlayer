@@ -25,7 +25,7 @@ struct CommandOutputResult {
 
 bool executeCommand(
     std::string const&                          command,
-    ::std::function<void(int, ::std::string&&)> output = [](int, ::std::string&&) {},
+    ::std::function<void(int, ::std::string&&)>&& output = [](int, ::std::string&&) {},
     DimensionType                               dim    = 0
 );
 

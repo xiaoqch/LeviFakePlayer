@@ -12,7 +12,6 @@
 
 #include "lfp/command/TickingCommand.h"
 #include "lfp/utils/NbtUtils.h"
-#include <string>
 
 namespace lfp::test {
 
@@ -22,9 +21,9 @@ constexpr auto PrintTickingDetail = false;
 
 
 bool executeCommand(
-    std::string const&                          command,
-    ::std::function<void(int, ::std::string&&)> output,
-    DimensionType                               dim
+    std::string const&                            command,
+    ::std::function<void(int, ::std::string&&)>&& output,
+    DimensionType                                 dim
 ) {
     auto context = CommandContext(
         command,

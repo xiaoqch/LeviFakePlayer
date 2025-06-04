@@ -35,19 +35,17 @@ namespace lfp::inline manager {
 
 
 FakePlayerManager::FakePlayerManager(std::filesystem::path const& dbPath)
-: mStorage(std::make_unique<FakePlayerStorage>(dbPath)),
+: mStoragePath(dbPath),
   mLogger(lfp::LeviFakePlayer::getLogger()) {
     DEBUGL("FakePlayerManager::FakePlayerManager({})", dbPath);
-    lfp::FakePlayer::FAKE_NETWORK_ID.mType = ::NetworkIdentifier::Type::Invalid;
-
-    this->initFakePlayers();
+    // lfp::FakePlayer::FAKE_NETWORK_ID.mType = ::NetworkIdentifier::Type::Invalid;
 }
 
-void FakePlayerManager::initFakePlayers() {
-
-    // std::vector<std::tuple<time_t, std::string_view>> tmp;
+void FakePlayerManager::reload() {
+    mStorage = std::make_unique<FakePlayerStorage>(mStoragePath);
     for (auto [uuid, tag] : mStorage->iter()) {
-        auto fp                              = FakePlayer::deserialize(*tag, this);
+        auto fp = FakePlayer::deserialize(*tag, this);
+        if (!fp) continue;
         mLookupMap[fp->getRealName()]        = fp.get();
         mLookupMap[fp->getUuid().asString()] = fp.get();
         mLookupMap[fp->getXuid()]            = fp.get();
@@ -61,6 +59,13 @@ FakePlayerManager::~FakePlayerManager() { DEBUGW("FakePlayerManager::~FakePlayer
 FakePlayerManager& FakePlayerManager::getManager() {
     return lfp::LeviFakePlayer::getInstance().getManager();
 }
+
+ll::coro::Generator<FakePlayer&> lfp::FakePlayerManager::iter(bool onlineOnly) {
+    for (auto& fp : mFakePlayers | std::views::values) {
+        if (onlineOnly && !fp->isOnline()) continue;
+        co_yield *fp;
+    }
+};
 
 std::unique_ptr<CompoundTag> FakePlayerManager::loadPlayerData(lfp::FakePlayer const& fp) {
     return mStorage->loadPlayerTag(fp.getUuid());
@@ -123,7 +128,8 @@ lfp::FakePlayer*
 FakePlayerManager::create(std::string name, bool login, std::unique_ptr<CompoundTag> playerData) {
     if (tryGetFakePlayer(name)) return {};
     auto uuid = utils::sp_utils::uuidFromName(name);
-    auto tmp  = std::make_unique<FakePlayer>(*this, name, uuid, time(0), false);
+    auto auid = ll::service::getLevel()->getNewUniqueID();
+    auto tmp  = std::make_unique<FakePlayer>(*this, name, uuid, auid, time(0), false);
     auto fp   = mFakePlayers.emplace(uuid, std::move(tmp)).first->second.get();
     mLookupMap.try_emplace(name, fp);
     mLookupMap.try_emplace(fp->getXuid(), fp);
@@ -192,6 +198,13 @@ lfp::FakePlayer* FakePlayerManager::tryGetFakePlayer(mce::UUID const& uuid) cons
 lfp::FakePlayer* FakePlayerManager::tryGetFakePlayer(Player const& player) const {
     auto uuid = player.getUuid();
     return tryGetFakePlayer(uuid);
+};
+
+lfp::FakePlayer* FakePlayerManager::tryGetFakePlayer(ActorUniqueID auid) const {
+    for (auto& fp : view()) {
+        if (fp.mUniqueId == auid) return &fp;
+    }
+    return nullptr;
 };
 
 lfp::FakePlayer* FakePlayerManager::tryGetFakePlayerByXuid(std::string const& xuid) const {

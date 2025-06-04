@@ -8,11 +8,11 @@
 #include "mc/network/ServerNetworkHandler.h"
 #include "mc/network/packet/PlayStatusPacket.h"
 #include "mc/network/packet/PlayerActionPacket.h"
-#include "mc/network/packet/PlayerAuthInputPacket.h"
 #include "mc/network/packet/RequestChunkRadiusPacket.h"
 #include "mc/network/packet/RespawnPacket.h"
 #include "mc/network/packet/ShowCreditsPacket.h"
 #include "mc/server/SimulatedPlayer.h"
+#include "mc/world/Minecraft.h"
 #include "mc/world/actor/ActorInitializationMethod.h"
 #include "mc/world/actor/player/Player.h"
 #include "mc/world/level/BlockPos.h"
@@ -46,13 +46,13 @@ template <typename T>
 
 template <typename T>
 void SimulateSendPacketToServer(SimulatedPlayer& sp, T& packet) {
-    packet.mClientSubId = sp.getClientSubId();
+    packet.mSenderSubId = sp.getClientSubId();
     DEBUGW("({})::send - {}", sp.getNameTag(), packetToDebugString(packet));
     ll::service::getServerNetworkHandler()->handle(sp.getNetworkIdentifier(), packet);
 }
 template <typename T>
 void SimulateSendPacketToServerAfter(SimulatedPlayer& sp, T&& packet, size_t delayTicks = 1) {
-    packet.mClientSubId = sp.getClientSubId();
+    packet.mSenderSubId = sp.getClientSubId();
     DEBUGW("({})::send - {}", sp.getNameTag(), packetToDebugString(packet));
     ll::thread::ServerThreadExecutor::getDefault().executeAfter(
         [&nid = sp.getNetworkIdentifier(), packet = std::move(packet)]() {
@@ -148,7 +148,7 @@ LL_TYPE_INSTANCE_HOOK(
 ) {
     if (FixManager::shouldFix(this)) {
         RespawnPacket packet{};
-        packet.mClientSubId = getClientSubId();
+        packet.mSenderSubId = getClientSubId();
         packet.mPos         = Vec3::ZERO();
         packet.mState       = PlayerRespawnState::ClientReadyToSpawn;
         packet.mRuntimeId   = getRuntimeID();
@@ -165,7 +165,7 @@ void SimulateHandlePacketFromServer(SimulatedPlayer& sp, RespawnPacket const& pa
     if (state == PlayerRespawnState::SearchingForSpawn) {
         // sp.setBlockRespawnUntilClientMessage(false);
         RespawnPacket res{};
-        res.mClientSubId = sp.getClientSubId();
+        res.mSenderSubId = sp.getClientSubId();
         res.mPos         = Vec3::ZERO();
         res.mState       = PlayerRespawnState::ClientReadyToSpawn;
         res.mRuntimeId   = sp.getRuntimeID();
@@ -218,7 +218,8 @@ LL_TYPE_INSTANCE_HOOK(
         std::forward<::DimensionType>(dimension)
     );
 };
-// TODO: trigger builtin spawn point search logic
+
+/// TODO: trigger builtin spawn point search logic
 LL_TYPE_INSTANCE_HOOK(
     SpawnFix_Temp_initSpawnPos,
     ll::memory::HookPriority::Normal,
@@ -285,7 +286,7 @@ LL_TYPE_INSTANCE_HOOK(
     ::UserEntityIdentifierComponent const* userIdentifier,
     ::Packet const&                        packet
 ) {
-    // TODO
+    /// TODO:
     if (userIdentifier->mNetworkId == lfp::FakePlayer::FAKE_NETWORK_ID) {
         try {
             [[maybe_unused]] auto handled = SimulateHandlePacketFromServer(
@@ -306,7 +307,6 @@ LL_TYPE_INSTANCE_HOOK(
         std::forward<::Packet const&>(packet)
     );
 };
-
 
 void FixManager::activateFeatureFix() {
     // LoadChunkFix__updateChunkPublisherView::hook();

@@ -1,8 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <utility>
-
+#include "mc/deps/core/math/Vec2.h"
 #include "mc/deps/core/math/Vec3.h"
 #include "mc/nbt/CompoundTag.h"
 #include "mc/nbt/FloatTag.h"
@@ -14,7 +12,6 @@ namespace lfp::utils::nbt_utils {
 
 bool swapChildByKey(CompoundTag& comp1, CompoundTag& comp2, std::string_view key);
 
-// TODO: Test needed
 bool tagDiff(
     CompoundTag const& left,
     CompoundTag const& right,
@@ -38,7 +35,6 @@ std::pair<std::unique_ptr<ListTag>, std::unique_ptr<ListTag>> tagDiff(
     size_t         recursionLimit = std::numeric_limits<size_t>::max()
 );
 
-// TODO: Test needed
 std::pair<std::unique_ptr<CompoundTag>, std::unique_ptr<CompoundTag>> tagDiff(
     CompoundTag const& left,
     CompoundTag const& right,
@@ -51,9 +47,48 @@ inline std::unique_ptr<ListTag> fromBlockPos(BlockPos const& bpos) {
 inline std::unique_ptr<ListTag> fromVec3(Vec3 const& vec) {
     return std::make_unique<ListTag>(ListTag{vec.x, vec.y, vec.z});
 }
-inline BlockPos toBlockPos(ListTag const& tag) { return {(int)tag[0], (int)tag[1], (int)tag[2]}; }
-inline Vec3     toVec3(ListTag const& tag) {
-    return {tag[0]->as<FloatTag>(), tag[1]->as<FloatTag>(), tag[2]->as<FloatTag>()};
+template <std::derived_from<Tag> T>
+consteval Tag::Type tagType() {
+    if constexpr (std::same_as<T, EndTag>) return Tag::Type::End;
+    else if constexpr (std::same_as<T, ByteTag>) return Tag::Type::Byte;
+    else if constexpr (std::same_as<T, ShortTag>) return Tag::Type::Short;
+    else if constexpr (std::same_as<T, IntTag>) return Tag::Type::Int;
+    else if constexpr (std::same_as<T, Int64Tag>) return Tag::Type::Int64;
+    else if constexpr (std::same_as<T, FloatTag>) return Tag::Type::Float;
+    else if constexpr (std::same_as<T, DoubleTag>) return Tag::Type::Double;
+    else if constexpr (std::same_as<T, ByteArrayTag>) return Tag::Type::ByteArray;
+    else if constexpr (std::same_as<T, StringTag>) return Tag::Type::String;
+    else if constexpr (std::same_as<T, ListTag>) return Tag::Type::List;
+    else if constexpr (std::same_as<T, CompoundTag>) return Tag::Type::Compound;
+    else if constexpr (std::same_as<T, IntArrayTag>) return Tag::Type::IntArray;
+}
+
+template <std::derived_from<Tag> T, size_t N>
+inline auto listDataViewWithValidation(Tag const& tag) {
+    constexpr auto takeData = [](auto& tag) { return tag->template as<T>().data; };
+    using ViewT =
+        std::optional<decltype(std::declval<ListTag const&>() | std::views::transform(takeData))>;
+
+    if (tag.getId() != Tag::List) return ViewT{};
+    auto& list = tag.as<ListTag>();
+    if (list.size() != N || list.mType != tagType<T>()) return ViewT{};
+    return ViewT{list | std::views::transform(takeData)};
+}
+
+inline std::optional<BlockPos> toBlockPos(Tag const& tag) {
+    auto view = listDataViewWithValidation<IntTag, 3>(tag);
+    if (!view) return {};
+    return BlockPos{(*view)[0], (*view)[1], (*view)[2]};
+}
+inline std::optional<Vec3> toVec3(Tag const& tag) {
+    auto view = listDataViewWithValidation<FloatTag, 3>(tag);
+    if (!view) return {};
+    return Vec3{(*view)[0], (*view)[1], (*view)[2]};
+}
+inline std::optional<Vec2> toVec2(Tag const& tag) {
+    auto view = listDataViewWithValidation<FloatTag, 2>(tag);
+    if (!view) return {};
+    return Vec2{(*view)[0], (*view)[1]};
 }
 
 } // namespace lfp::utils::nbt_utils

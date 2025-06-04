@@ -20,7 +20,8 @@ LL_TYPE_STATIC_HOOK(
     ::BlockPos const&                                     spawnPos,
     ::DimensionType                                       dimensionId,
     ::Bedrock::NotNullNonOwnerPtr<::ServerNetworkHandler> serverNetworkHandler,
-    ::std::string const&                                  xuid
+    ::std::string const&                                  xuid,
+    ::std::optional<::ActorUniqueID>                      idOverride
 ) {
     if (!lfp::FakePlayerManager::getManager().tryGetFakePlayerByXuid(xuid)) {
         lfp::LeviFakePlayer::getInstance().getFixManager().beforeFakePlayerLogin();
@@ -30,7 +31,8 @@ LL_TYPE_STATIC_HOOK(
         std::forward<::BlockPos const&>(spawnPos),
         std::forward<::DimensionType>(dimensionId),
         std::forward<::Bedrock::NotNullNonOwnerPtr<::ServerNetworkHandler>>(serverNetworkHandler),
-        std::forward<::std::string const&>(xuid)
+        std::forward<::std::string const&>(xuid),
+        std::forward<::std::optional<::ActorUniqueID>>(idOverride)
     );
 };
 
@@ -63,7 +65,7 @@ void FixManager::removeSimulatedPlayerFix() {
 bool FixManager::shouldFix(Player const* pl, bool forceFpOnly) {
     static bool fixAllSimulatedPlayer = lfp::getConfig().config.fix.fixAllSimulatedPlayer;
     if (nullptr == pl || !pl->isSimulated()) return false;
-    // TODO: Test needed
+    /// TODO: Test needed
     // Ignore SimulatedPlayer created by gametest
     if (nullptr != static_cast<SimulatedPlayer const*>(pl)->mGameTestHelper->get()) return false;
     if (fixAllSimulatedPlayer && !forceFpOnly) return true;

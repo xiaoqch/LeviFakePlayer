@@ -4,11 +4,11 @@
 
 namespace lfp::utils::sp_utils {
 
-
 std::string xuidFromUuid(mce::UUID uuid) {
     int64_t v = ((uuid.a >> 16) ^ uuid.b) ^ ((uuid.b >> 16) * uuid.a);
     return std::to_string(-abs(v));
 }
+
 mce::UUID uuidFromName(std::string_view name) {
     return JAVA_nameUUIDFromBytes(fmt::format("LFP_{}", name));
 }
@@ -42,4 +42,19 @@ mce::UUID JAVA_nameUUIDFromBytes(std::string_view name) {
     hash.insert(8, 1, '-');
     return mce::UUID::fromString(hash);
 }
+
+optional_ref<gametest::BaseGameTestHelper> getGameTestHelper() {
+    static auto instance =
+        ll::service::getMinecraft()
+            .transform([](auto& mc) {
+                ::gametest::BaseGameTestInstance* testInstance = nullptr;
+                auto                              provider =
+                    mc.mGameTest->mUnk5a5712.template as<MinecraftGameTestHelperProvider*>();
+                return provider->createGameTestHelper(*testInstance);
+            })
+            .value_or(::std::unique_ptr<::gametest::BaseGameTestHelper>());
+    return instance.get();
+}
+
+
 } // namespace lfp::utils::sp_utils

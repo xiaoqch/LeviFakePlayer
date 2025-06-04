@@ -109,7 +109,7 @@ std::string packetToString(T& pkt) {
         (int)pkt.getId()
         // magic_enum::enum_name(pkt.mPriority),
         // magic_enum::enum_name(pkt.mReliability),
-        // magic_enum::enum_name(pkt.mClientSubId),
+        // magic_enum::enum_name(pkt.mSenderSubId),
         // magic_enum::enum_name(pkt.mCompressible)
     );
 }
@@ -130,7 +130,7 @@ namespace SimulatedClient {
 
 template <typename T>
 void send(SimulatedPlayer const& sp, T& packet) {
-    packet.mClientSubId = sp.getClientSubId();
+    packet.mSenderSubId = sp.getClientSubId();
     DEBUGW("({})::send - {}", sp.getNameTag(), packetToString(packet));
     ll::service::getServerNetworkHandler()->handle(sp.getNetworkIdentifier(), packet);
 }
@@ -163,7 +163,7 @@ void handle(SimulatedPlayer& sp, ChangeDimensionPacket const& packet) {
 //     auto uniqueId = sp.getOrCreateUniqueID();
 //     Schedule::delay(
 //         [&sp]() {
-//             // TODO: uniqueId 失效
+//             /// TODO: uniqueId 失效
 //             // auto sp = (SimulatedPlayer*)ll::service::getLevel()->fetchEntity(uniqueId, true);
 //             ASSERT(lfp::utils::sp_utils::isFakePlayer(sp));
 //             ShowCreditsPacket res;
@@ -191,7 +191,7 @@ void handle(SimulatedPlayer& sp, ModalFormRequestPacket const& packet) {
             res.mJSONResponse     = "null";
             res.mFormCancelReason = ::ModalFormCancelReason::UserClosed;
             res.mIsHandled        = false;
-            res.mClientSubId      = sp.getClientSubId();
+            res.mSenderSubId      = sp.getClientSubId();
             send(sp, res);
         },
         20

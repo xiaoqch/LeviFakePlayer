@@ -5,13 +5,18 @@
 #include <string_view>
 
 #include "lfp/LeviFakePlayer.h"
+#include "ll/api/utils/StringUtils.h"
 
 namespace lfp::inline manager {
 
 FakePlayerStorage::FakePlayerStorage(std::filesystem::path const& storagePath)
 : mLock(),
   mLogger(lfp::LeviFakePlayer::getLogger()),
-  mStorage(std::make_unique<ll::data::KeyValueDB>(storagePath)) {}
+  mStorage(std::make_unique<ll::data::KeyValueDB>(storagePath)) {
+    auto version = mStorage->get("VERSION").value_or("0");
+    mVersion     = ll::string_utils::svtoi(version).value_or(0);
+    if (mVersion != sCurrentVersion) upgrade(mVersion);
+}
 
 bool FakePlayerStorage::removePlayerData(mce::UUID uuid) {
     std::lock_guard<StorageLock> lock(mLock);

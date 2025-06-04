@@ -61,14 +61,6 @@
 template <typename T>
 using GameTestResultVariant = ::std::variant<::gametest::GameTestError, T>;
 
-template <>
-struct GameRefs<EntityContext> {
-    using OwnerStorage       = std::shared_ptr<EntityContext>;
-    using StackResultStorage = std::shared_ptr<EntityContext>;
-    using WeakStorage        = std::weak_ptr<EntityContext>;
-    using StackRef           = EntityContext;
-};
-
 template <typename T, bool LOG = true>
 inline void onHookCall(std::string_view const name) {
     if constexpr (LOG) {
@@ -94,13 +86,13 @@ void onHandlePacket(NetworkIdentifier const&, std::shared_ptr<Pkt> packet) {
 }
 
 
-#define HOOK_Player
-#define HOOK_ServerPlayer
-#define HOOK_SimulatedPlayer
-#define HOOK_ServerNetworkHandler
+// #define HOOK_Player
+// #define HOOK_ServerPlayer
+// #define HOOK_SimulatedPlayer
+// #define HOOK_ServerNetworkHandler
 // #define HOOK_MinecraftGameTestHelper
-#define HOOK_LoopbackPacketSender
+// #define HOOK_LoopbackPacketSender
 // #define HOOK_PacketObserver
-#define HOOK_PlayerContainerSetter
+// #define HOOK_PlayerContainerSetter
 
 #endif

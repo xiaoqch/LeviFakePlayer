@@ -1,11 +1,6 @@
 #include "rcapi.h"
-#include "nlohmann/json.hpp"
-#include <ranges>
-#include <string>
-#include <utility>
-#include <vector>
+#include "mc/server/SimulatedPlayer.h"
 
-#include "RemoteCallAPI.h"
 #include "ll/api/event/EventBus.h"
 #include "ll/api/event/ListenerBase.h"
 #include "ll/api/utils/ErrorUtils.h"
@@ -21,13 +16,13 @@
 #include "lfp/manager/FakePlayer.h"
 #include "lfp/manager/FakePlayerManager.h"
 #include "lfp/utils/DebugUtils.h"
+#include "nlohmann/json.hpp"
 
 
 #define FAKE_PLAYER_API_DEBUG
 #if defined(FAKE_PLAYER_API_DEBUG) && !defined(LFP_DEBUG)
 
 #endif // FAKE_PLAYER_API_DEBUG
-
 
 #define ExportRemoteCallApi(name)                                                                  \
     RemoteCall::exportAs<decltype(lfp::api::rcapi::name)>(                                         \
@@ -162,7 +157,7 @@ std::vector<std::string> list() {
     // return std::vector(view.begin(), view.end());
     auto nameView = FakePlayerManager::getManager().getTimeSortedFakePlayerList()
                   | std::views::transform([](auto fp) { return fp->getRealName(); });
-    return std::vector(nameView.begin(), nameView.end());
+    return {nameView.begin(), nameView.end()};
 }
 
 bool create(std::string const& name) {
@@ -223,10 +218,9 @@ ll::event::ListenerId subscribeEvent(
     DEBUGL(__FUNCTION__);
     auto eventType = magic_enum::enum_cast<EventType>(eventName);
     if (!eventType) {
-        throw "Unknown EventName";
+        throw std::runtime_error("Unknown EventName");
     }
     auto handleFn = RemoteCall::importAs<RemoteCallCallbackFn>(callbackNamespace, callbackName);
-    if (!handleFn) return 0;
     return subscribeEventImpl(
         *eventType,
         [handleFn = std::move(handleFn)](event::FakePlayerEventBase const& ev) {
@@ -294,11 +288,12 @@ ll::event::ListenerId subscribeEventImpl(
         listener = bus.emplaceListener<event::FakePlayerUpdateEvent>(std::move(callback));
         break;
     default:
-        throw "Unknown EventType";
+        throw std::runtime_error("Unknown EventType");
     }
     return listener->getId();
 };
 
 void RemoveRemoteCallApis() { RemoteCall::removeNameSpace(LEVIFAKEPLAYER_NAMESPACE); }
+
 
 } // namespace lfp::api

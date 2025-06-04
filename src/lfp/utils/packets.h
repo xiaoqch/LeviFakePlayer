@@ -112,8 +112,6 @@
 #include "mc/network/packet/LevelEventGenericPacket.h"
 #include "mc/network/packet/LevelEventPacket.h"
 #include "mc/network/packet/LevelSoundEventPacket.h"
-#include "mc/network/packet/LevelSoundEventPacketV1.h"
-#include "mc/network/packet/LevelSoundEventPacketV2.h"
 #include "mc/network/packet/LoginPacket.h"
 #include "mc/network/packet/MapCreateLockedCopyPacket.h"
 #include "mc/network/packet/MapInfoRequestPacket.h"

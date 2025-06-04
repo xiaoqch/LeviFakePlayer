@@ -1,14 +1,17 @@
 #include "lfp/fix/FixManager.h"
 
+#include "mc/certificates/Certificate.h"
 #include "mc/certificates/identity/GameServerToken.h"
 #include "mc/common/SubClientId.h"
 #include "mc/deps/ecs/gamerefs_entity/EntityContext.h"
 #include "mc/entity/components/ActorUniqueIDComponent.h"
 #include "mc/legacy/ActorRuntimeID.h"
 #include "mc/legacy/ActorUniqueID.h"
+#include "mc/network/NetworkIdentifier.h"
 #include "mc/server/ServerLevel.h"
 #include "mc/server/SimulatedPlayer.h"
 #include "mc/world/level/storage/DBStorage.h"
+
 
 #include "ll/api/memory/Hook.h"
 #include "ll/api/service/Bedrock.h"
@@ -17,6 +20,8 @@
 #include "lfp/manager/FakePlayerManager.h"
 #include "lfp/utils/DebugUtils.h"
 #include "lfp/utils/SimulatedPlayerUtils.h"
+#include <cassert>
+#include <cstddef>
 
 
 namespace lfp::fix {
@@ -38,7 +43,7 @@ LL_TYPE_INSTANCE_HOOK(
     if (!fp) return;
     DEBUGW("&LevelStorage::save(::Player& player);");
     try {
-        lfp::FakePlayerManager::getManager().saveRuntimeData(*fp);
+        manager.saveRuntimeData(*fp);
     } catch (...) {
         manager.mLogger.error("Error occurred when saving data of \"{}\".", fp->getRealName());
     }
@@ -58,25 +63,29 @@ LL_TYPE_INSTANCE_HOOK(
         std::forward<decltype(client)>(client),
         std::forward<decltype(isXboxLive)>(isXboxLive)
     );
+    if (isXboxLive || !client.isSimulated()) return std::forward<decltype(loadedTag)>(loadedTag);
+
     DEBUGW("LevelStorage::loadServerPlayerData({}, {})", client.getNameTag(), isXboxLive);
-    if (FixManager::shouldFix(client, true)) {
-        auto& manager = lfp::FakePlayerManager::getManager();
-        if (loadedTag) {
-            manager.mLogger.warn("Storage data for SimulatedPlayer is not empty");
+    auto fp = client.getEntityContext().tryGetComponent<ActorUniqueIDComponent>().transform(
+        [](auto&& comp) -> FakePlayer* {
+            if (comp.mActorUniqueID == ActorUniqueID::INVALID_ID()) return nullptr;
+            return lfp::FakePlayerManager::getManager().tryGetFakePlayer(comp.mActorUniqueID);
         }
-        auto fp = manager.tryGetFakePlayerByXuid(client.getXuid());
-        if (fp) {
-            auto& playerTag = fp->mCachedTag;
-            if (playerTag) {
-                DEBUGW("Replace SimulatedPlayer data");
-                loadedTag.swap(playerTag);
-            }
+    );
+    if (fp) {
+        if (loadedTag) {
+            lfp::FakePlayerManager::getManager().mLogger.warn(
+                "Storage data for SimulatedPlayer is not empty"
+            );
+        }
+        auto& playerTag = fp->mCachedTag;
+        if (playerTag) {
+            DEBUGW("Replace SimulatedPlayer data");
+            loadedTag.swap(playerTag);
         }
     }
     return std::forward<decltype(loadedTag)>(loadedTag);
 }
-
-#if false
 
 // fix player identifiers before constructor
 LL_TYPE_INSTANCE_HOOK(
@@ -91,124 +100,55 @@ LL_TYPE_INSTANCE_HOOK(
     ::ClientBlobCache::Server::ActiveTransfersManager& clientCacheMirror,
     ::GameType                                         playerGameType,
     ::NetworkIdentifier const&                         owner,
-    ::SubClientId                                      subid,
+    ::SubClientId                                      subId,
     ::std::function<void(::ServerPlayer&)>             playerLoadedCallback,
     ::mce::UUID                                        uuid,
-    ::std::string const&                               token,
-    ::GameServerToken const&                           maxChunkRadius,
-    int                                                enableItemStackNetManager,
-    bool                                               entityContext,
-    ::EntityContext&                                   deviceId
+    ::std::string const&                               deviceId,
+    ::GameServerToken const&                           token,
+    int                                                maxChunkRadius,
+    bool                                               enableItemStackNetManager,
+    ::EntityContext&                                   entityContext
 ) {
-
     auto& manager = lfp::FakePlayerManager::getManager();
-    if (lfp::FakePlayer::mLoggingInPlayer) {
-        auto& fp = *lfp::FakePlayer::mLoggingInPlayer;
-        uuid     = fp.getUuid();
-        subid    = fp.getClientSubId();
-        if (fp.mUniqueId != ActorUniqueID::INVALID_ID()) {
-            auto uidcmp = deviceId.getOrAddComponent<ActorUniqueIDComponent>(fp.mUniqueId);
-            assert(uidcmp.mActorUniqueID == fp.mUniqueId);
-        }
+    if (lfp::FakePlayer::sLoggingInPlayer) {
+        auto& fp                                = *lfp::FakePlayer::sLoggingInPlayer;
+        uuid                                    = fp.getUuid();
+        subId                                   = fp.getClientSubId();
         const_cast<::NetworkIdentifier&>(owner) = fp.FAKE_NETWORK_ID;
     } else {
-        manager.mLogger.warn("Unknown SimulatedPlayer creation detected");
+        manager.mLogger.info("Unknown SimulatedPlayer creation detected");
     }
 
-    auto rtn = origin(
+    auto ret = origin(
         std::forward<::Level&>(level),
         std::forward<::PacketSender&>(packetSender),
         std::forward<::ServerNetworkSystem&>(network),
         std::forward<::ClientBlobCache::Server::ActiveTransfersManager&>(clientCacheMirror),
         std::forward<::GameType>(playerGameType),
         std::forward<::NetworkIdentifier const&>(owner),
-        std::forward<::SubClientId>(subid),
+        std::forward<::SubClientId>(subId),
         std::forward<::std::function<void(::ServerPlayer&)>>(playerLoadedCallback),
         std::forward<::mce::UUID>(uuid),
-        std::forward<::std::string const&>(token),
-        std::forward<::GameServerToken const&>(maxChunkRadius),
-        std::forward<int>(enableItemStackNetManager),
-        std::forward<bool>(entityContext),
-        std::forward<::EntityContext&>(deviceId)
+        std::forward<::std::string const&>(deviceId),
+        std::forward<::GameServerToken const&>(token),
+        std::forward<int>(maxChunkRadius),
+        std::forward<bool>(enableItemStackNetManager),
+        std::forward<::EntityContext&>(entityContext)
     );
-    assert(getClientSubId() == subid);
+#ifdef LFP_DEBUG
+    if (lfp::FakePlayer::sLoggingInPlayer) {
+        assert(getClientSubId() == lfp::FakePlayer::sLoggingInPlayer->getClientSubId());
+        assert(getUuid() == lfp::FakePlayer::sLoggingInPlayer->getUuid());
+    }
     lfp::LeviFakePlayer::getLogger().debug(
         "SimulatedPlayer::$ctor: {}, client sub id: {}, runtime id: {}",
         this->getNameTag(),
         (int)this->getClientSubId(),
         this->getRuntimeID().rawID
     );
-    return rtn;
-};
-
-#else
-
-// fix player identifiers before constructor
-LL_TYPE_INSTANCE_HOOK(
-    PlayerIdsFix,
-    ::ll::memory::HookPriority::Normal,
-    ::SimulatedPlayer,
-    &::Player::$ctor,
-    void*,
-    ::Level&                   level,
-    ::PacketSender&            packetSender,
-    ::GameType                 playerGameType,
-    bool                       isHostingPlayer,
-    ::NetworkIdentifier const& owner,
-    ::SubClientId              subid,
-    ::mce::UUID                uuid,
-    ::std::string const&       playFabId,
-    ::std::string const&       deviceId,
-    ::GameServerToken const&   gameServerToken,
-    ::EntityContext&           entityContext,
-    ::std::string const&       platformId,
-    ::std::string const&       platformOnlineId
-) {
-    bool shouldFix =
-        playFabId.empty() && deviceId.empty() && owner.mType == NetworkIdentifier::Type::Invalid;
-    if (shouldFix) {
-        auto& manager = lfp::FakePlayerManager::getManager();
-        if (lfp::FakePlayer::mLoggingInPlayer) {
-            auto& fp = *lfp::FakePlayer::mLoggingInPlayer;
-            uuid     = fp.getUuid();
-            subid    = fp.getClientSubId();
-            if (fp.mUniqueId != ActorUniqueID::INVALID_ID()) {
-                auto uidcmp = entityContext.getOrAddComponent<ActorUniqueIDComponent>(fp.mUniqueId);
-            }
-            const_cast<::NetworkIdentifier&>(owner) = fp.FAKE_NETWORK_ID;
-        } else {
-            manager.mLogger.warn("Unknown SimulatedPlayer creation detected");
-        }
-    }
-    auto rtn = origin(
-        std::forward<::Level&>(level),
-        std::forward<::PacketSender&>(packetSender),
-        std::forward<::GameType>(playerGameType),
-        std::forward<bool>(isHostingPlayer),
-        std::forward<::NetworkIdentifier const&>(owner),
-        std::forward<::SubClientId>(subid),
-        std::forward<::mce::UUID>(uuid),
-        std::forward<::std::string const&>(playFabId),
-        std::forward<::std::string const&>(deviceId),
-        std::forward<::GameServerToken const&>(gameServerToken),
-        std::forward<::EntityContext&>(entityContext),
-        std::forward<::std::string const&>(platformId),
-        std::forward<::std::string const&>(platformOnlineId)
-    );
-#ifdef LFP_DEBUG
-    if (shouldFix) {
-        assert(getClientSubId() == subid);
-        lfp::LeviFakePlayer::getLogger().debug(
-            "SimulatedPlayer::$ctor: {}, client sub id: {}, runtime id: {}",
-            getNameTag(),
-            (int)getClientSubId(),
-            getRuntimeID().rawID
-        );
-    }
 #endif
-    return rtn;
+    return ret;
 };
-#endif
 
 // NOLINTNEXTLINE
 void FixManager::activateStorageFix() {

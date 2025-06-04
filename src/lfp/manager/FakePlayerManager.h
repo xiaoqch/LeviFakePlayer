@@ -1,14 +1,6 @@
 #pragma once
 
-#include <cassert>
-#include <concepts>
-#include <coroutine>
-#include <filesystem>
-#include <functional>
-#include <memory>
-#include <ranges>
-#include <string>
-
+#include "mc/legacy/ActorUniqueID.h"
 #include "mc/nbt/CompoundTag.h"
 #include "mc/platform/UUID.h"
 #include "mc/server/SimulatedPlayer.h"
@@ -43,7 +35,8 @@ concept ValidFakePlayerIndex =
 
 class FakePlayerManager {
 private:
-    std::unique_ptr<FakePlayerStorage> mStorage;
+    std::filesystem::path              mStoragePath;
+    std::unique_ptr<FakePlayerStorage> mStorage{};
     ll::io::Logger&                    mLogger;
 
     std::unordered_map<mce::UUID, std::unique_ptr<FakePlayer>> mFakePlayers;
@@ -51,7 +44,7 @@ private:
     // std::vector<std::string>                                   smSortedNames;
 
 private:
-    void initFakePlayers();
+    void reload();
 
 
 public:
@@ -102,15 +95,11 @@ public:
 public:
     [[nodiscard]] static FakePlayerManager& getManager();
 
-    [[nodiscard]] ll::coro::Generator<FakePlayer&> iter() {
-        for (auto& fp : mFakePlayers | std::views::values) {
-            co_yield *fp;
-        }
-    };
-    inline void forEachFakePlayer(std::function<void(FakePlayer const& fp)> callback) const {
-        for (auto& fp : mFakePlayers | std::views::values) {
-            callback(*fp);
-        }
+    [[nodiscard]] ll::coro::Generator<FakePlayer&> iter(bool onlineOnly = false);
+
+    inline auto view() const {
+        return mFakePlayers | std::views::values
+             | std::views::transform([](auto& fp) -> FakePlayer& { return *fp; });
     }
     [[nodiscard]] std::vector<FakePlayer*> getTimeSortedFakePlayerList();
 
@@ -127,7 +116,7 @@ public:
         if (fp) return login(*fp);
         return nullptr;
     }
-    
+
     template <ValidFakePlayerIndex T>
     inline bool logout(T const& id) {
         auto fp = tryGetFakePlayer(id);
@@ -145,6 +134,7 @@ public:
     [[nodiscard]] FakePlayer* tryGetFakePlayer(Player const& player) const;
     [[nodiscard]] FakePlayer* tryGetFakePlayer(mce::UUID const& uuid) const;
     [[nodiscard]] FakePlayer* tryGetFakePlayer(std::string const& nameOrId) const;
+    [[nodiscard]] FakePlayer* tryGetFakePlayer(ActorUniqueID auid) const;
 
     FakePlayer* tryGetFakePlayerByXuid(std::string const& xuid) const;
 

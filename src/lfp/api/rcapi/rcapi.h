@@ -1,22 +1,18 @@
 #pragma once
 
 #include "lfp/api/base/Global.h"
+
 #include "ll/api/event/ListenerBase.h"
-#include <cassert>
-#include <ll/api/reflection/Deserialization.h>
-#include <ll/api/reflection/Reflection.h>
-#include <ll/api/reflection/Serialization.h>
-
-
 #include "mc/server/SimulatedPlayer.h"
-#include <RemoteCallAPI.h>
-#include <string>
-#include <type_traits>
-#include <vector>
-
-#include "lfp/api/events/base/FakePlayerEventBase.h"
 #include "mc/world/level/storage/DBStorage.h"
 #include "mc/world/level/storage/LevelStorage.h"
+#include "nlohmann/json_fwd.hpp"
+
+#include "RemoteCallAPI.h"
+
+#include "lfp/api/base/Global.h"
+#include "lfp/api/events/base/FakePlayerEventBase.h"
+#include "lfp/manager/FakePlayer.h"
 
 // example getVersionString = ImportFakePlayerAPI
 #define LEVIFAKEPLAYER_NAMESPACE "LeviFakePlayerAPI"
@@ -46,7 +42,7 @@ struct FakePlayerInfo {
     std::string      name;
     std::string      xuid;
     std::string      uuid;
-    std::string      skinId    = "";
+    std::string      skinId{};
     bool             online    = false;
     bool             autoLogin = false;
     SimulatedPlayer* player    = nullptr;
@@ -103,26 +99,6 @@ LFPNDAPI ll::event::ListenerId subscribeEventImpl(
 
 [[nodiscard]] bool ExportRemoteCallApis();
 void               RemoveRemoteCallApis();
-
-static_assert(
-    ll::reflection::is_reflectable_v<FakePlayerInfo>,
-    "Make sure FakePlayerInfo is reflectable"
-);
-
-template <class From, class To, int I = ll::reflection::member_count_v<From> - 1>
-constexpr bool is_all_member_convertible =
-    std::is_convertible_v<ll::reflection::member_t<I, From>, To>
-    && is_all_member_convertible<From, To, I - 1>;
-template <class From, class To>
-constexpr bool is_all_member_convertible<From, To, 0> =
-    std::is_convertible_v<ll::reflection::member_t<0, From>, To>;
-
-static_assert(
-    is_all_member_convertible<FakePlayerInfo, RemoteCall::ValueType>,
-    "Make sure all member can be converted to RemoteCall Value"
-);
-
-// TODO: Reflection support
 
 #endif
 

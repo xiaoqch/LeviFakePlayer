@@ -9,6 +9,7 @@
 
 #include "mc/_HeaderOutputPredefine.h"
 #include "mc/common/SubClientId.h"
+#include "mc/gametest/framework/BaseGameTestHelper.h"
 #include "mc/legacy/ActorUniqueID.h"
 #include "mc/nbt/CompoundTag.h"
 #include "mc/server/SimulatedPlayer.h"
@@ -29,25 +30,25 @@ class FakePlayerStorage;
 
 class FakePlayer {
 private:
-    FakePlayerManager& mManager;
-    std::string const  mRealName;
-    mce::UUID const    mUuid;
-    time_t             mLastOnlineTime;
-    bool               mAutoLogin = false;
+    FakePlayerManager&  mManager;
+    std::string const   mRealName;
+    mce::UUID const     mUuid;
+    ActorUniqueID const mUniqueId;
+    time_t              mLastOnlineTime;
+    bool                mAutoLogin = false;
 
     // Online Data
     std::string      mXuid;
-    ActorUniqueID    mUniqueId;
     bool             mOnline      = false;
     SimulatedPlayer* mPlayer      = nullptr;
-    SubClientId      mClientSubId = static_cast<SubClientId>(-1);
+    SubClientId      mSenderSubId = static_cast<SubClientId>(-1);
 
     // Temperate data
     std::unique_ptr<CompoundTag>                      mCachedTag = {};
     std::optional<std::pair<BlockPos, DimensionType>> mCreateAt;
 
-    static FakePlayer*   mLoggingInPlayer;
-    static unsigned char mMaxClientSubId;
+    static FakePlayer*   sLoggingInPlayer;
+    static unsigned char sMaxClientSubId;
 
     [[nodiscard]] static SubClientId getNextClientSubId();
     // [[nodiscard]] std::string        getServerId() const;
@@ -67,6 +68,7 @@ public:
         FakePlayerManager& manager,
         std::string        realName,
         mce::UUID          uuid,
+        ActorUniqueID      uniqueId,
         time_t             lastOnlineTime = 0,
         bool               autoLogin      = false
     );
@@ -83,7 +85,8 @@ public:
 
     [[nodiscard]] std::string                getXuid() const;
     [[nodiscard]] mce::UUID const&           getUuid() const;
-    [[nodiscard]] constexpr SubClientId      getClientSubId() const { return mClientSubId; }
+    [[nodiscard]] constexpr ActorUniqueID    getUniqueId() const { return mUniqueId; };
+    [[nodiscard]] constexpr SubClientId      getClientSubId() const { return mSenderSubId; }
     [[nodiscard]] constexpr std::string      getRealName() const { return mRealName; }
     [[nodiscard]] constexpr SimulatedPlayer* getRuntimePlayer() const { return mPlayer; };
     [[nodiscard]] constexpr bool             isOnline() const { return mOnline; }
