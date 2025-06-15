@@ -6,6 +6,7 @@
 #include "lfp/Config.h"
 #include "lfp/utils/DebugUtils.h"
 #include "ll/api/command/EnumName.h"
+#include "magic_enum.hpp"
 #include "mc/server/commands/CommandOutput.h"
 #include "mc/server/commands/CommandPosition.h"
 #include "mc/server/commands/CommandRegistry.h"
@@ -146,7 +147,7 @@ void FakePlayerCommand::setup(LeviFakePlayerConfig::CommandConfig const& config)
                 break;
             }
             default:
-                output.error("Unknown action {}", params.action);
+                output.error("Unknown action {}", magic_enum::enum_name(params.action));
             }
         }
     );

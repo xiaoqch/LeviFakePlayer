@@ -63,7 +63,7 @@ private:
     void setDefaultSpawn(BlockPos const& spawnPos, DimensionType dimension);
 
 public:
-    static NetworkIdentifier FAKE_NETWORK_ID;
+    static NetworkIdentifier const& FAKE_NETWORK_ID;
     FakePlayer(
         FakePlayerManager& manager,
         std::string        realName,

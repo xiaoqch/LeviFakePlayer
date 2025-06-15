@@ -20,8 +20,6 @@
 #include "lfp/manager/FakePlayerManager.h"
 #include "lfp/utils/DebugUtils.h"
 #include "lfp/utils/SimulatedPlayerUtils.h"
-#include <cassert>
-#include <cstddef>
 
 
 namespace lfp::fix {
@@ -114,7 +112,7 @@ LL_TYPE_INSTANCE_HOOK(
         auto& fp                                = *lfp::FakePlayer::sLoggingInPlayer;
         uuid                                    = fp.getUuid();
         subId                                   = fp.getClientSubId();
-        const_cast<::NetworkIdentifier&>(owner) = fp.FAKE_NETWORK_ID;
+        // const_cast<::NetworkIdentifier&>(owner) = fp.FAKE_NETWORK_ID;
     } else {
         manager.mLogger.info("Unknown SimulatedPlayer creation detected");
     }

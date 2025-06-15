@@ -36,7 +36,7 @@
 namespace lfp::inline manager {
 
 FakePlayer*       FakePlayer::sLoggingInPlayer = nullptr;
-NetworkIdentifier FakePlayer::FAKE_NETWORK_ID(NetworkIdentifier::INVALID_ID());
+NetworkIdentifier const& FakePlayer::FAKE_NETWORK_ID = NetworkIdentifier::INVALID_ID();
 
 constexpr SubClientId INVALID_SUB_CLIENT_ID = SubClientId::PrimaryClient;
 
